@@ -1040,6 +1040,153 @@ XSLT transforms the declared and derived XML graph structures into SVG-3D repres
 
 ---
 
+## Weighted graph — native weights
+
+Weights in K'UHUL are a graph-theoretic concept first. No neural-model meaning is required.
+
+$$
+\boxed{w: V \cup E \rightarrow \mathbb{R}}
+$$
+
+A vertex carries a weight `w(v_i)` and an ARC carries a weight `w(e_{ij})`. A subgraph `S` has aggregate weight:
+
+$$
+\boxed{W(S) = \sum_{v \in V(S)} w(v) + \sum_{e \in E(S)} w(e)}
+$$
+
+### Weight value ≠ meaning of weight
+
+The numerical value is graph-theoretic. Its semantic interpretation is a separate contract:
+
+| `weight.kind` | Meaning |
+|--------------|---------|
+| `cost` | Traversal cost |
+| `strength` | Relation strength |
+| `frequency` | Observed usage count |
+| `energy` | Activation energy |
+| `earned_confidence` | Validated-outcomes / observed-uses |
+| `probability` | Normalized likelihood |
+| `reliability` | Stability over time |
+
+$$
+\boxed{\text{weight value} \neq \text{meaning of weight}}
+$$
+
+Graph theory supplies the numerical mechanism. K'UHUL / OpenMath / KXML contracts supply semantic interpretation.
+
+### Weighted adjacency is the natural tensor
+
+$$
+W_{ij} =
+\begin{cases}
+w(e_{ij}) & i \rightarrow j \\
+0 & \text{otherwise}
+\end{cases}
+$$
+
+The graph itself produces the matrix — no neural tensor needs to be imposed:
+
+```
+Graph
+  ↓
+vertices + ARCs
+  ↓
+weights
+  ↓
+weighted adjacency W
+  ↓
+W², W³, ... Wⁿ
+  ↓
+weighted multi-ARC propagation
+```
+
+Example: two parallel two-step routes X → Z:
+
+$$
+X \xrightarrow{0.8} B \xrightarrow{0.7} Z \qquad X \xrightarrow{0.6} C \xrightarrow{0.9} Z
+$$
+
+$$
+(W^2)_{XZ} = (0.8)(0.7) + (0.6)(0.9) = 0.56 + 0.54 = 1.10
+$$
+
+This `1.10` is the aggregate weighted contribution of length-2 walks. It is **not automatically probability or confidence** — it is ordinary matrix multiplication over graph weights.
+
+### Gram, graph, tensor — three separate roles
+
+$$
+\boxed{\text{gram identifies structure}}
+$$
+
+$$
+\boxed{\text{graph supplies weights}}
+$$
+
+$$
+\boxed{\text{matrix / tensor represents those weights computationally}}
+$$
+
+A gram `g = {v₁, v₂, ..., vₙ}` identifies a semantic subgraph. Its weight field is derived from the participating node and ARC weights — not invented separately.
+
+### SVG-3D as weighted field representation
+
+GraphDB owns identity, topology, ARCs, weight semantics, and weight values. SVG-3D provides a structured tensor/field *representation* of them:
+
+$$
+G_w = (V, E, w) \quad \xrightarrow{\text{XSLT}} \quad T(G_w) \quad \text{(SVG-3D weighted field)}
+$$
+
+```
+GraphML
+   │  nodes / ARCs / weights
+   ↓
+ XSLT
+   ↓
+SVG-3D weighted field
+   ↓
+KAST / SCXQ2
+```
+
+$$
+\boxed{\text{XSLT transforms the representation, not the weight's authority.}}
+$$
+
+### Yax scoring over a weighted graph
+
+Candidate outgoing ARCs from current state X:
+
+$$
+\Gamma^+(X) = \{e_1, e_2, \ldots, e_k\}
+$$
+
+Each carries its graph weight. Yax combines it with earned confidence and query relevance:
+
+$$
+\boxed{S(e_i, Q) = w(e_i)\; C(e_i)\; R(e_i, Q)}
+$$
+
+This is the Micronaut law `S_μ = W_μ C_μ R_μ(Q)` — now with a precise meaning for `W`: **a weight attached to an entity or relationship in the semantic graph**. Being learned is not what makes it a weight.
+
+### Foundation
+
+$$
+\boxed{G = (V, E, w)}
+$$
+
+$$
+\boxed{W = \text{weighted adjacency representation of } G}
+$$
+
+$$
+\boxed{W^n = \text{weighted propagation across length-}n\text{ walks}}
+$$
+
+$$
+\boxed{K'UHUL = \text{phase-governed processing of that weighted information graph}}
+$$
+
+---
+
 ## Architecture summary diagram
 
 ```
