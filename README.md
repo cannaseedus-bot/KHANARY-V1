@@ -13,6 +13,7 @@ KHANARY encodes tensor operations and control flow into 32-bit **Knowledge Numer
 | `models/` | Birdsong geometry model (STB format, KNU encoding, HLSL/WGSL kernels) |
 | `docs/` | STB format spec, birdsong geometry grammar, tensor fields, brain schema |
 | `tools/` | STB read/write, brain→STB, GGUF→STB, safetensors→STB converters |
+| `grammar/` | `KHANARY.EBNF` — unified K'UHUL grammar v7.0.0 (1496 lines, 23 sections); sub-grammars: kast, kfold, khl-rom, kxml, xcfe, xjson, xshard, pi-enforcement, KLSL shader PEG; ebnf-parser + grammar-validator tooling |
 | `klsl/` | KLSL kernel sources — the K'UHUL shader IR (`.kuhul` → HLSL / WGSL / GLSL) |
 | `kxc/` | KXC compiler v1 — `.kuhul` kernel descriptor → HLSL / WGSL / SMCA JSON / CPU C++ |
 | `khlc/` | KHLC compiler v1 — `.kuhul` / `.khl` semantic source → KAST / KSON |
@@ -43,7 +44,16 @@ KLSL IR
 ```
 
 ### KXML
-Declarative inference graph format with tool-aware Jinja chat templates. One KXML front-end drives any GGUF model through the stock-model adapter. See `kxml/README.md`.
+Declarative inference graph format with tool-aware Jinja chat templates. One KXML front-end drives any GGUF model through the stock-model adapter. KXML is the topology layer — it describes the compute graph; `.kuhul` / `.khl` own the application logic; C++ / C# / PS1 nodes in KXML are strictly system I/O boundary hooks (`@effect: io`, `@effect: process`). See `kxml/README.md`.
+
+### K'UHUL grammar
+`grammar/KHANARY.EBNF` is the canonical 23-section unified grammar (v7.0.0). It covers the full language surface: lexical structure, geometric operators, tensor definitions, compression folds, manifold execution, ECMAScript agent model, micronauts, MoE routing, KXML topology, policy engine, entanglement, and the compression universe container. Sub-grammars in `grammar/` cover KAST, KFOLD, KHL-ROM, XCFE, XJSON, XSHARD, the π enforcement layer, and the KLSL shader PEG. Parse with `grammar/ebnf-parser.js`; validate with `grammar/grammar-validator.js`.
+
+**Language split:**
+- `.kuhul` / `.khl` — application logic, kernels, training loops, agents (90%+ of a KHANARY app)
+- `KLSL` — math lowering layer (`.kuhul` → HLSL / WGSL / GLSL), stays in `klsl/`
+- `KXML` — graph topology, orchestration stubs only
+- C++ / C# / PS1 — system boundary only; no application logic
 
 ---
 
