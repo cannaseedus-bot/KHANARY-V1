@@ -52,6 +52,8 @@ Three confirmed GPU paths for iGPU inference (Intel HD 4600 and equivalents):
 | Python local | `torch-directml` (DirectML via D3D12) | `gen.py --local` |
 | Node local | `node-llama-cpp` + WebGL2 | `gen.mjs` default |
 
+Brain architecture and recursive cognition reference: [`docs/KUHUL-BRAIN-ARCHITECTURE.md`](docs/KUHUL-BRAIN-ARCHITECTURE.md) — Brain = G+T+N+R+E+M+P, ARC semantics with phase position, n-ary gram theory, IDB causal memory, SVG-3D tensor fields, 2π recursive closure, fold/unfold discovery.
+
 Full stack documentation: [`docs/GPU.md`](docs/GPU.md) — covers D3D11 cs_5_0, DirectML/KLSL forward pass, OpenCL, XVM 32-fiber cluster, fold tensor system, skeleton/bone routing, and hybrid trainer architecture. [`docs/GLSL.md`](docs/GLSL.md) — OpenGL 4.3 universal compute path. [`docs/PHASE-TRANSFORMER.md`](docs/PHASE-TRANSFORMER.md) — phase-addressed field architecture.
 
 ### KXML
