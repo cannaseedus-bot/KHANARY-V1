@@ -758,6 +758,288 @@ $$
 
 ---
 
+## XSLT — representation transformation axis
+
+XSLT is not Brain state. It lives on the **representation axis**, translating between graph/math/markup formats. K'UHUL lives on the **phase axis**, transforming Brain state through the 2π cycle.
+
+$$
+\boxed{BrainState = G + T + N + R + E + M + P}
+$$
+
+$$
+\boxed{XSLT: Representation_A \rightarrow Representation_B}
+$$
+
+$$
+\boxed{K'UHUL: BrainState_n \xrightarrow{\theta} BrainState_{n+1}}
+$$
+
+### The representation pipeline
+
+```
+             SEMANTIC SOURCES
+                   │
+    ┌──────────────┼──────────────┐
+    │              │              │
+  AIML          MathML        OpenMath
+    │              │              │
+    └──────────────┼──────────────┘
+                   ▼
+                GraphML
+         semantic topology
+                   │
+              n-ary grams
+                   │
+                   ▼
+             ┌────XSLT────┐
+             │            │
+             ▼            ▼
+           KXML        SVG-3D
+             │       tensor/field
+             └─────┬──────┘
+                   ▼
+                  KAST
+                   │
+                  KSON
+                   │
+                 SCXQ2
+```
+
+```
+IDB
+ │
+ ├── ASX-RAM
+ ├── gram observations
+ ├── gram patterns
+ ├── causal provenance
+ └── schema registry
+          │
+          ▼
+Pop → Wo → Yax → XCFE → Sek → Ch'en → Xul
+ ↑                                      │
+ └──────────────── 2π ──────────────────┘
+```
+
+### Identity ≠ Representation
+
+An entity maintains one semantic identity while acquiring multiple structural representations:
+
+```
+DECLARED STRUCTURE
+GraphML node
+     │
+     │  XSLT
+     ▼
+PROJECTED STRUCTURE
+SVG-3D / KXML representation
+```
+
+**Same node. Different projection.** No duplication of the conceptual entity.
+
+This is supported by GraphML's `edgedefault="directed"` + `source`/`target` pattern — the same structure as ARC:
+
+$$
+\boxed{ARC: X \rightarrow Z \quad \Longleftrightarrow \quad \text{GraphML: } e = (source, target)}
+$$
+
+Therefore:
+
+$$
+\boxed{XCFE\ transition \subseteq declared\ GraphML\ topology}
+$$
+
+A predicted ARC that is not in the GraphML topology must not be admitted.
+
+### The product state
+
+The same semantic object behaves differently depending on where it is admitted in the phase wheel:
+
+$$
+\boxed{ExecutionState = SemanticState \times Phase}
+$$
+
+A node `N₄₂` traverses the wheel without changing identity:
+
+$$
+(N_{42}, Pop) \rightarrow (N_{42}, Wo) \rightarrow (N_{42}, Yax) \rightarrow \ldots
+$$
+
+Phase advance:
+
+$$
+\theta_{n+1} = (\theta_n + \pi/3) \bmod 2\pi
+$$
+
+### Why the phase is not decorative
+
+Without `θ`, the stack is XML graph processing. With `θ`, it is a recursive state machine:
+
+$$
+X_n \xrightarrow{Y_n} Z_n \xrightarrow{Xul} X_{n+1}
+$$
+
+The representation may not change at all. What changes is its **meaning within the current computation**.
+
+### The four separation laws
+
+$$
+\boxed{\text{Topology tells WHERE.}}
+$$
+
+$$
+\boxed{\text{XSLT tells HOW TO REPRESENT IT.}}
+$$
+
+$$
+\boxed{\theta\ \text{tells WHEN / WHERE IN THE CYCLE IT MEANS SOMETHING.}}
+$$
+
+$$
+\boxed{\text{XCFE tells WHETHER THE TRANSITION MAY OCCUR.}}
+$$
+
+### No-JS execution contract
+
+The historical GraphML/SVG/RCC approach required ECMAScript for layout and behavior. K'UHUL replaces that layer:
+
+```
+GraphML
+   ↓  XSLT
+SVG-3D / KXML
+   ↓
+KAST
+   ↓
+XCFE authorization
+   ↓
+K'UHUL execution (θ-phase state machine)
+```
+
+ECMAScript is not in the execution path.
+
+---
+
+## Graph-algebraic unfolding — matrix powers
+
+Let `A` be the adjacency matrix of the semantic GraphDB. Then:
+
+$$
+\boxed{(A^n)_{ij} = \text{number of length-}n\text{ walks from node }i\text{ to node }j}
+$$
+
+Successive powers expose what the graph can reach:
+
+```
+A¹  →  direct ARCs (declared topology)
+A²  →  two-step reachability
+A³  →  three-step reachability; tr(A³) counts triangles
+Aⁿ  →  n-step semantic routes
+```
+
+### Unfold has a formal definition
+
+$$
+\boxed{Unfold_k(G, X) = \{Z \mid (A^n)_{XZ} > 0,\; 1 \le n \le k\}}
+$$
+
+This is the **phase-bounded unfolded field** Yax operates over. `k` is graph depth; `θ` governs what is *done* with the powers — these are independent:
+
+$$
+\boxed{n \neq \theta}
+$$
+
+$$
+\boxed{\theta \text{ governs the interpretation and use of } A^n}
+$$
+
+### Declared ARC vs. derived reachability
+
+$$
+A_{ij} > 0 \quad \Rightarrow \quad \text{declared direct ARC}
+$$
+
+$$
+(A^n)_{ij} > 0,\; n > 1 \quad \Rightarrow \quad \text{derived n-step reachability — not a new direct ARC}
+$$
+
+The derived relationship is **Yax evidence**, not a XCFE-admitted topology change. Predicted ARCs that are not in `A` must not become declared edges unless validated through the full cycle.
+
+### Weighted adjacency — route strength
+
+Replace binary `A` with weighted `W` (ARC weights):
+
+$$
+(W^2)_{XZ} = \sum_k W_{Xk} W_{kZ}
+$$
+
+This aggregates the strength of every two-step route from `X` to `Z`. Generalizing:
+
+$$
+\boxed{RouteScore(X, Z, n) = (W^n)_{XZ}}
+$$
+
+This is structural attention — not Transformer `softmax(QK^T)V`, but graph-algebraic route weighting.
+
+### Three-layer Yax evidence
+
+For candidate `Z` from current state `X`:
+
+$$
+\boxed{R(X, Z) = f\bigl(Gram(X,Z),\; A^1_{XZ},\; A^2_{XZ},\; \ldots,\; A^k_{XZ}\bigr)}
+$$
+
+| Evidence layer | What it contributes |
+|---------------|---------------------|
+| n-ary gram | Semantic co-occurrence / configuration |
+| `A^n` graph power | Topological n-step reachability |
+| SVG-3D tensor W | Route strength weights |
+
+All three feed Yax. Scoring:
+
+$$
+\boxed{S_\mu = W_\mu C_\mu R_\mu(Q, G, A^n)}
+$$
+
+### SVG triangles have graph-algebraic grounding
+
+$$
+\operatorname{tr}(A^3) \propto \text{number of triangles in the graph}
+$$
+
+The SVG mesh triangles in the Birdsong Brain are not arbitrary visual geometry — they correspond to closed length-3 walks in the semantic graph. Higher-order mesh structures can be derived directly from `A^n` without a neural model.
+
+### Derivation chain
+
+```
+GraphML / GraphDB
+      │
+      ▼
+ adjacency A (or weighted W)
+      │
+ ┌────┼─────────┐
+ │    │         │
+A²    A³       Aⁿ
+ │    │         │
+ │    ├── cycles / triads → SVG-3D mesh structure
+ │    │
+ │    └─────────────┐
+ ▼                  ▼
+reachability    higher-order topology
+      │
+      ▼
+   n-ary grams
+      │
+      ▼
+ SVG-3D tensor field
+      │
+    XSLT
+      │
+    KXML
+```
+
+XSLT transforms the declared and derived XML graph structures into SVG-3D representations without owning any reasoning decision.
+
+---
+
 ## Architecture summary diagram
 
 ```
