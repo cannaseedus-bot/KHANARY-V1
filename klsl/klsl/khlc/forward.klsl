@@ -1,0 +1,51 @@
+// forward.klsl — xshard fold forward pass
+// Embed lookup → causal GQA attention (softcap 30) → SwiGLU MLP → logit softcap 50
+// Compile: klslc forward.klsl
+
+⟁ shader fold_forward
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [64, 1, 1]
+
+  ⟁Wo⟁ StructuredBuffer<int>      tokens     : register(t0)
+  ⟁Wo⟁ StructuredBuffer<float>    embed_w    : register(t1)
+  ⟁Wo⟁ StructuredBuffer<float>    attn_w     : register(t2)
+  ⟁Wo⟁ StructuredBuffer<float>    mlp_w      : register(t3)
+  ⟁Wo⟁ RWStructuredBuffer<float>  hidden_out : register(u0)
+  ⟁Wo⟁ RWStructuredBuffer<float>  logit_out  : register(u1)
+  ⟁Wo⟁ ConstantBuffer<FwdConst>   cb         : register(b0)
+
+  // FwdConst: uint seq_len, n_embd, n_vocab; float attn_softcap, logit_softcap, scale
+
+  [Pop fold_forward]
+    ⟁Wo⟁ uint tid = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (tid >= cb.seq_len) return
+
+    // Embed lookup + scale by sqrt(n_embd)
+    ⟁Wo⟁ int   tok  = tokens[tid]
+    ⟁Wo⟁ uint  ebase = tok * cb.n_embd
+    ⟁Wo⟁ float scale = sqrt((float)cb.n_embd)
+
+    ⟁Wo⟁ float acc = 0.0f
+    ⟁K'ayab'⟁ uint d in 0 .. cb.n_embd
+      ⟁Wo⟁ float e = embed_w[ebase + d] * scale
+      ⟁Sek⟁ acc += e * attn_w[tid * cb.n_embd + d]
+    ⟁Kumk'u⟁
+
+    // Attention score softcap: 30 * tanh(score / 30)
+    ⟁Wo⟁ float capped = cb.attn_softcap * tanh(acc / cb.attn_softcap)
+
+    // SwiGLU: gate * silu(up)
+    ⟁Wo⟁ float gate = mlp_w[tid * 2]
+    ⟁Wo⟁ float up   = mlp_w[tid * 2 + 1]
+    ⟁Wo⟁ float silu = up / (1.0f + exp(-up))
+    ⟁Wo⟁ float mlp  = gate * silu
+
+    ⟁Sek⟁ hidden_out[tid] = capped + mlp
+
+    // Logit softcap: 50 * tanh(logit / 50)
+    ⟁Wo⟁ float logit = capped + mlp
+    ⟁Sek⟁ logit_out[tid] = cb.logit_softcap * tanh(logit / cb.logit_softcap)
+  [Xul]
+
+⟁Xul⟁

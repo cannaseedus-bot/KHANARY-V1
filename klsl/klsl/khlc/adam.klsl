@@ -1,0 +1,44 @@
+// adam.klsl — Adam optimizer weight update
+// Reads m/v/step state from previous buffers, applies Adam update, writes new weights
+// Compile: klslc adam.klsl
+
+⟁ shader fold_adam
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [32, 1, 1]
+
+  ⟁Wo⟁ StructuredBuffer<float>    grad_w  : register(t0)
+  ⟁Wo⟁ StructuredBuffer<float>    m_in    : register(t1)
+  ⟁Wo⟁ StructuredBuffer<float>    v_in    : register(t2)
+  ⟁Wo⟁ RWStructuredBuffer<float>  weights : register(u0)
+  ⟁Wo⟁ RWStructuredBuffer<float>  m_out   : register(u1)
+  ⟁Wo⟁ RWStructuredBuffer<float>  v_out   : register(u2)
+  ⟁Wo⟁ ConstantBuffer<AdamConst>  cb      : register(b0)
+
+  // AdamConst: uint n_shard, step; float lr, beta1, beta2, eps
+
+  [Pop fold_adam]
+    ⟁Wo⟁ uint tid = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (tid >= cb.n_shard) return
+
+    ⟁Wo⟁ float g = grad_w[tid]
+
+    // First moment: m = beta1*m + (1-beta1)*g
+    ⟁Wo⟁ float m = cb.beta1 * m_in[tid] + (1.0f - cb.beta1) * g
+    // Second moment: v = beta2*v + (1-beta2)*g^2
+    ⟁Wo⟁ float v = cb.beta2 * v_in[tid] + (1.0f - cb.beta2) * g * g
+
+    // Bias correction
+    ⟁Wo⟁ float bc1  = 1.0f - pow(cb.beta1, (float)cb.step)
+    ⟁Wo⟁ float bc2  = 1.0f - pow(cb.beta2, (float)cb.step)
+    ⟁Wo⟁ float m_hat = m / bc1
+    ⟁Wo⟁ float v_hat = v / bc2
+
+    // Weight update: w -= lr * m_hat / (sqrt(v_hat) + eps)
+    ⟁Wo⟁ float delta = cb.lr * m_hat / (sqrt(v_hat) + cb.eps)
+    ⟁Sek⟁ weights[tid] -= delta
+    ⟁Sek⟁ m_out[tid] = m
+    ⟁Sek⟁ v_out[tid] = v
+  [Xul]
+
+⟁Xul⟁

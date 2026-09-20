@@ -1,0 +1,6 @@
+[Pop fold_clamp]
+  [Muwan dispatch 64 1 1]
+  [Sek needsGradClip   true]
+  [Sek needsValueClamp true]
+  [Sek needsShmWrite   true]
+[Xul]

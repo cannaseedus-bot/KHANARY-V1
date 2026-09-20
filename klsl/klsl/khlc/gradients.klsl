@@ -1,0 +1,35 @@
+// gradients.klsl — gradient accumulation with probe scaling
+// Applies grad_scale, accumulates across fold phases, flushes on threshold
+// Compile: klslc gradients.klsl
+
+⟁ shader fold_gradients
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [32, 1, 1]
+
+  ⟁Wo⟁ StructuredBuffer<float>    grad_in   : register(t0)
+  ⟁Wo⟁ StructuredBuffer<float>    accum_in  : register(t1)
+  ⟁Wo⟁ RWStructuredBuffer<float>  accum_out : register(u0)
+  ⟁Wo⟁ RWStructuredBuffer<float>  flush_out : register(u1)
+  ⟁Wo⟁ ConstantBuffer<GradConst>  cb        : register(b0)
+
+  // GradConst: uint n_shard, accum_step, flush_every; float grad_scale
+
+  [Pop fold_gradients]
+    ⟁Wo⟁ uint tid = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (tid >= cb.n_shard) return
+
+    // Apply probe scale and accumulate
+    ⟁Wo⟁ float g     = grad_in[tid] * cb.grad_scale
+    ⟁Wo⟁ float accum = accum_in[tid] + g
+    ⟁Sek⟁ accum_out[tid] = accum
+
+    // Flush on threshold
+    ⟁Wo⟁ uint next_step = cb.accum_step + 1u
+    ⟁Sek⟁ if ((next_step % cb.flush_every) == 0u)
+      ⟁Sek⟁ flush_out[tid] = accum
+    ⟁Sek⟁ else
+      ⟁Sek⟁ flush_out[tid] = 0.0f
+  [Xul]
+
+⟁Xul⟁

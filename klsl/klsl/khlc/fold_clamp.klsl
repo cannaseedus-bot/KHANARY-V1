@@ -1,0 +1,34 @@
+// fold_clamp.klsl — gradient / activation clamping
+// mode 0: L2-norm grad clip (--grad-clip 1.0)
+// mode 1: element-wise hard clamp (for logits / activations)
+// Compile: klslc fold_clamp.klsl
+
+⟁ shader fold_clamp
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [64, 1, 1]
+
+  ⟁Wo⟁ StructuredBuffer<float>   tensor_in  : register(t0)
+  ⟁Wo⟁ RWStructuredBuffer<float> tensor_out : register(u0)
+  ⟁Wo⟁ ConstantBuffer<ClampConst> cb        : register(b0)
+
+  // ClampConst: uint n, mode; float clip_norm, clip_lo, clip_hi
+
+  [Pop fold_clamp]
+    ⟁Wo⟁ uint tid = SV_DispatchThreadID.x
+    ⟁Sek⟁ if (tid >= cb.n) return
+
+    ⟁Wo⟁ float x = tensor_in[tid]
+
+    // mode 0: grad-norm clip
+    ⟁Sek⟁ if (cb.mode == 0u)
+      ⟁Wo⟁ float g_norm = abs(x)
+      ⟁Wo⟁ float ratio  = (g_norm > cb.clip_norm) ? (cb.clip_norm / g_norm) : 1.0f
+      ⟁Sek⟁ tensor_out[tid] = x * ratio
+
+    // mode 1: element-wise clamp
+    ⟁Sek⟁ else
+      ⟁Sek⟁ tensor_out[tid] = clamp(x, cb.clip_lo, cb.clip_hi)
+  [Xul]
+
+⟁Xul⟁

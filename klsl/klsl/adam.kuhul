@@ -1,0 +1,6 @@
+[Pop fold_adam]
+  [Muwan dispatch 32 1 1]
+  [Sek needsAdam       true]
+  [Sek needsShmState   true]
+  [Sek needsXshardWrite true]
+[Xul]

@@ -1,0 +1,7 @@
+[Pop fold_gradients]
+  [Muwan dispatch 32 1 1]
+  [Sek needsGradAccum  true]
+  [Sek needsGradScale  true]
+  [Sek needsShmState   true]
+  [Sek needsXshardWrite true]
+[Xul]

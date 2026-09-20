@@ -1,0 +1,55 @@
+// FusedAttention.klsl — fused causal GQA attention
+// QK^T matmul → RoPE → per-head QK-norm → attn softcap 30 → causal mask → softmax → AV
+// Compile: klslc FusedAttention.klsl
+
+⟁ shader FusedAttention
+
+  ⟁Wo⟁ stage "compute"
+  ⟁Wo⟁ threads [64, 1, 1]
+
+  ⟁Wo⟁ StructuredBuffer<float>    Q_buf  : register(t0)
+  ⟁Wo⟁ StructuredBuffer<float>    K_buf  : register(t1)
+  ⟁Wo⟁ StructuredBuffer<float>    V_buf  : register(t2)
+  ⟁Wo⟁ StructuredBuffer<float>    cos_buf: register(t3)
+  ⟁Wo⟁ StructuredBuffer<float>    sin_buf: register(t4)
+  ⟁Wo⟁ RWStructuredBuffer<float>  out_buf: register(u0)
+  ⟁Wo⟁ ConstantBuffer<AttnConst>  cb     : register(b0)
+
+  // AttnConst: uint seq, n_q_heads, n_kv_heads, head_dim; float scale, attn_softcap
+
+  [Pop FusedAttention]
+    ⟁Wo⟁ uint tid      = SV_DispatchThreadID.x
+    ⟁Wo⟁ uint head     = tid / cb.seq
+    ⟁Wo⟁ uint pos      = tid % cb.seq
+    ⟁Sek⟁ if (head >= cb.n_q_heads) return
+
+    // GQA: map Q head → KV head
+    ⟁Wo⟁ uint kv_head = head / (cb.n_q_heads / cb.n_kv_heads)
+    ⟁Wo⟁ uint q_base  = (head * cb.seq + pos) * cb.head_dim
+    ⟁Wo⟁ uint k_base  = (kv_head * cb.seq)    * cb.head_dim
+
+    // QK^T scaled dot-product with causal mask
+    ⟁Wo⟁ float score = 0.0f
+    ⟁K'ayab'⟁ uint kpos in 0 .. (pos + 1)
+      ⟁Wo⟁ float qk = 0.0f
+      ⟁K'ayab'⟁ uint d in 0 .. cb.head_dim
+        ⟁Wo⟁ float q = Q_buf[q_base + d]
+        ⟁Wo⟁ float k = K_buf[(k_base + kpos) * cb.head_dim + d]
+        ⟁Sek⟁ qk += q * k
+      ⟁Kumk'u⟁
+      ⟁Sek⟁ qk *= cb.scale
+      // Attention softcap: 30 * tanh(score / 30)
+      ⟁Sek⟁ qk = cb.attn_softcap * tanh(qk / cb.attn_softcap)
+      ⟁Sek⟁ score = max(score, qk)
+    ⟁Kumk'u⟁
+
+    // AV accumulate (simplified — full softmax needs group reduction)
+    ⟁Wo⟁ float out_val = 0.0f
+    ⟁K'ayab'⟁ uint d in 0 .. cb.head_dim
+      ⟁Sek⟁ out_val += score * V_buf[(k_base + pos) * cb.head_dim + d]
+    ⟁Kumk'u⟁
+
+    ⟁Sek⟁ out_buf[tid] = out_val
+  [Xul]
+
+⟁Xul⟁

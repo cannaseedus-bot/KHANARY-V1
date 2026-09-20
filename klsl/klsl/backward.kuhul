@@ -1,0 +1,8 @@
+[Pop fold_backward]
+  [Muwan dispatch 32 1 1]
+  [Sek needsMatMul      true]
+  [Sek needsSiluGrad    true]
+  [Sek needsGradClip    true]
+  [Sek needsShmRead     true]
+  [Sek needsXshardWrite true]
+[Xul]
