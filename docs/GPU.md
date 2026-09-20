@@ -61,7 +61,7 @@ npm install        # installs node-llama-cpp from package.json
 node tools/gen.mjs "your task"
 ```
 
-`getLlama({ gpu: 'webgl' })` routes through the system's OpenGL ICD — the same `ig75icd64.dll` path used by the ggml-xcfe bridge's WebGPU GL backend.
+`getLlama({ gpu: 'webgl' })` routes through the system's OpenGL ICD (`ig75icd64.dll`) — the same path used by `xcfe_gl_ops.dll`'s wgpu_native GL backend (note: `ggml-xcfe` itself is a DirectML bridge, not WebGPU).
 Entry point: `tools/gen.mjs` (WebGL2 default)
 
 ---
@@ -384,7 +384,7 @@ llama-server.exe  (or json_runtime.exe)
 
 ---
 
-## ggml-xcfe bridge — GGML backend + WebGPU GL tensor ops
+## ggml-xcfe bridge — DirectML GEMM backend + GL ops sidecar (`xcfe_gl_ops`)
 
 **Source** (authoritative): `bridges/ggml-xcfe/`
 
