@@ -1339,6 +1339,187 @@ This can be tested by extracting triangle node-ID triples from `mesh.svg` and ch
 
 ---
 
+## Neighborhood — bounded semantic context
+
+### Open and closed neighborhood
+
+For a semantic node `v` in the Brain network:
+
+$$
+\boxed{N(v) = \text{vertices adjacent to } v}
+$$
+
+$$
+\boxed{N[v] = N(v) \cup \{v\}}
+$$
+
+`N(v)` is the open neighborhood — what `v` is connected to.  
+`N[v]` is the closed neighborhood — `v` plus its immediate context.
+
+### Pop as closed neighborhood acquisition
+
+The closed neighborhood is the natural default Pop operation: it retains the current state plus everything immediately reachable from it.
+
+$$
+\boxed{Pop(X) = N[X]}
+$$
+
+### k-neighborhood and unfold radius
+
+$$
+\boxed{N_k[X] = \{v \mid d(X, v) \le k\}}
+$$
+
+Unfolding becomes neighborhood expansion:
+
+```
+N₀[X] = {X}              current state only
+N₁[X]                    immediate context
+N₂[X]                    context-of-context
+N_k[X]                   bounded unfolded field
+```
+
+Adjacency powers provide the computational machinery:  
+`(A^k)_{Xj} > 0` means a length-`k` walk from `X` to `j` exists.
+
+$$
+\boxed{Adjacency \rightarrow Neighborhood \rightarrow Expansion \rightarrow Unfold}
+$$
+
+Fold/unfold get formal definitions:
+
+$$
+\boxed{Fold(X) = X \text{ with surrounding network unresolved}}
+$$
+
+$$
+\boxed{Unfold_k(X) = N_k[X]}
+$$
+
+### Yax operates over a bounded search field
+
+$$
+\boxed{Candidates(X, k) = N_k[X]}
+$$
+
+```
+POP    acquire X; compute N[X]
+ │
+WO     establish local network state
+ │
+YAX    rank candidates inside N_k[X]
+ │
+XCFE   validate proposed ARC
+ │
+SEK    execute/traverse
+ │
+CH'EN  observe Z; record ΔG
+ │
+XUL    collapse Z → next X; commit to IDB
+```
+
+`k` is the unfold radius — a real runtime parameter that bounds computational cost.
+
+### n-ary grams enrich the neighborhood, not replace it
+
+The neighborhood answers: **what is structurally near X?**  
+The n-ary gram answers: **which combinations inside that field have higher-order semantic coherence?**
+
+```
+              N[X]
+       ┌────────────────┐
+       │       A        │     gram: (X, A, C)
+       │      / \       │     gram: (A, B, D)
+       │     X   B      │
+       │      \ /       │
+       │       C──D     │
+       └────────────────┘
+```
+
+### Graph vs. network
+
+The Semantic Brain is a **network**, not a bare graph:
+
+$$
+\boxed{G = (V, E) \quad \text{(topology only)}}
+$$
+
+$$
+\boxed{\mathcal{N} = (V, E, \mathcal{A}_V, \mathcal{A}_E) \quad \text{(topology + attributes)}}
+$$
+
+A node in the Brain carries:
+
+```
+Node X
+├── semantic identity
+├── weight  w(v)
+├── earned confidence
+├── gram membership
+├── tensor identity
+├── provenance
+└── representation references
+```
+
+An ARC carries:
+
+```
+ARC Y : X → Z
+├── relation
+├── weight  w(e)
+├── cost
+├── ΔH
+├── tensor
+├── permissions
+└── evidence
+```
+
+### Micronaut neighborhood and relevance
+
+A micronaut `μ` has its own semantic neighborhood `N(μ)`. A query establishes `N(Q)`. Relevance can derive from overlap without requiring embedding similarity for everything:
+
+$$
+\boxed{R_\mu(Q) = f\bigl(\text{gram match},\; N(Q) \cap N(\mu),\; d(Q,\mu),\; \text{path weight},\; \text{embedding sim}\bigr)}
+$$
+
+Embeddings are one evidence source, not the definition of relevance.
+
+### Recursive neighborhood change
+
+After Ch'en discovers `ΔG`, the graph updates:
+
+$$
+G_n \rightarrow G_{n+1}
+$$
+
+The next revolution exposes a different neighborhood:
+
+$$
+\boxed{N_k^{G_n}[X] \neq N_k^{G_{n+1}}[X]}
+$$
+
+This is the recursive behavior: each `2π` revolution can literally expose new candidates because the Brain changed during the previous revolution.
+
+### Vocabulary
+
+| Graph concept | K'UHUL meaning |
+|--------------|----------------|
+| Vertex / node | Semantic identity / state |
+| Edge / ARC | Declared relationship / transition |
+| Weight | Numerical value `w(v)` or `w(e)` |
+| Neighbor | Adjacent semantic entity |
+| `N(v)` | Immediate open context |
+| `N[v]` | Current entity + immediate context |
+| `N_k[v]` | Bounded unfolded context (unfold radius k) |
+| `A^k` | Algebraic walk / reachability machinery |
+| Triangle | Closed 3-cycle |
+| n-ary gram | Higher-order semantic configuration |
+| Network `𝒩` | Graph + semantic / runtime attributes |
+| Fold | Node with surrounding network unresolved |
+| Unfold_k | `N_k[X]` — k-hop expansion |
+
+---
+
 ## Architecture summary diagram
 
 ```
