@@ -1,5 +1,5 @@
 # KHΛNARY V1
-
+<img src="https://github.com/cannaseedus-bot/KHANARY/raw/main/khanary.png">
 **Multi-alphabet Semantic Encoding and Execution Substrate for Deterministic Neural Compute Pipelines**
 
 KHANARY encodes tensor operations and control flow into 32-bit **Knowledge Numeric Unit** (KNU) words using the `KHΛ-2-DENSE-32` profile, enabling deterministic replay of neural compute workloads on CPU with optional iGPU acceleration via WebGPU / GLSL / HLSL.
