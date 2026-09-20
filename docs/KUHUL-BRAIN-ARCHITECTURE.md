@@ -404,6 +404,21 @@ DGML (Directed Graph Markup Language) is the second track format. It encodes rea
 
 Where `.track.xjson` encodes a linear phase-indexed QA sequence, DGML encodes a **branching topology** — nodes are reasoning states, links are directed transitions, properties carry typed metadata (phase, timestamp, visual encoding, weight). DGML graphs can be arbitrarily deep and wide, giving the system unbounded reasoning track space.
 
+Full DGML schema (`https://schemas.microsoft.com/vs/2009/dgml/dgml.xsd`):
+
+| Element | K'UHUL mapping |
+|---------|---------------|
+| `Node` (Id, Label, Group, Category, Shape) | Semantic identity — maps to GraphDB node |
+| `Link` (Source, Target, Category, Label) | Directed relation — maps to ARC |
+| `Category` (Id, BasedOn, IsContainment) | Semantic type tag; `BasedOn` = inheritance; `IsContainment` = fold container |
+| `Property` (Id, DataType) | Typed metadata field — carries phase `θ`, weight `W`, confidence `C`, entropy `ΔH` |
+| `Style` (Condition + Setter) | Conditional visual encoding — maps phase/weight to color/stroke |
+| `Group` (Expanded / Collapsed) | K'UHUL fold — a collapsed node is a folded subgraph waiting to unfold |
+| `Layout` (ForceDirected / Sugiyama / DependencyMatrix) | Reasoning topology style |
+| `QualifiedName` / `Path` | Namespace and path aliases for cross-graph references |
+
+Key `DirectedGraph` attributes: `GraphDirection` (TopToBottom / LeftToRight), `Layout`, `ZoomLevel`.
+
 ### Tracks in the Brain architecture
 
 Tracks sit at the intersection of **N** (n-ary grams), **E** (micronauts), and **G** (graph topology):
