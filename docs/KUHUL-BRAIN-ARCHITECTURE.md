@@ -316,19 +316,19 @@ REVOLUTION 1
 
 ### Current implementation vs. target
 
-`micronaut-v4/` contains the SCXQ7 definition with two n-ary containers and ~850 MB of n-grams and micronaut-grams. This is the original KHA-NARY n-gram corpus — but those grams are **stack-trace and random-information sourced**: they capture surface co-occurrence from runtime observations, not relationships derived from GraphDB topology.
+`micronaut-v4/` contains the SCXQ7 definition with two n-ary containers and ~850 MB of n-grams and micronaut-grams. This is the original KHA-NARY n-gram corpus. The grams are built from stack/runtime observations **but already carry semantic grounding via AIML pattern matching, XCFE transition contracts, and ELIZA rules** — they are not flat statistical co-occurrence.
 
-The architecture described here targets **semantically structured** n-ary grams:
+The GraphDB target adds a further layer on top:
 
 | | Current (micronaut-v4 SCXQ7) | Target (this architecture) |
 |---|---|---|
-| Source | Stack traces, runtime random info | GraphDB topology + semantic identity |
-| Coherence | Statistical co-occurrence | Semantic node binding |
-| Size | ~850 MB | Derived from graph; compact |
+| Source | Stack traces, runtime info | Same + GraphDB topology |
+| Semantic grounding | AIML / XCFE / ELIZA | AIML / XCFE / ELIZA **+ graph node identity** |
+| Coherence | Pattern-matched semantic units | Semantic node binding in graph topology |
 | Phase-aware | No | Yes — grams sorted into Pop/Wo/Yax/Sek/Ch'en/Xul |
 | Dynamic | Static corpus | `grams_{n+1} = Compile/Resolve(G_{n+1})` |
 
-The 850 MB corpus remains useful as a **prior / bootstrap signal** — it encodes real runtime patterns. The upgrade is giving those grams semantic identity by grounding them in the GraphDB rather than treating them as flat string n-tuples.
+The 850 MB corpus can **answer questions today** via µN-ary RAG. The GraphDB layer promotes those grams from pattern-indexed to **topology-indexed** — grounded in the 30,628-node brain graph rather than only in AIML/ELIZA semantic rules.
 
 ---
 
