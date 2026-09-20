@@ -12,7 +12,7 @@ KHANARY encodes tensor operations and control flow into 32-bit **Knowledge Numer
 |-----------|----------|
 | `models/` | Birdsong geometry model (STB format, KNU encoding, HLSL/WGSL kernels) |
 | `docs/` | STB format spec, birdsong geometry grammar, tensor fields, brain schema |
-| `tools/` | STB read/write, brain→STB, GGUF→STB, safetensors→STB converters |
+| `tools/` | STB read/write, brain→STB, GGUF→STB, safetensors→STB converters; `gen.py` two-model adviser→coder pipeline |
 | `grammar/` | `KHANARY.EBNF` — unified K'UHUL grammar v7.0.0 (1496 lines, 23 sections); sub-grammars: kast, kfold, khl-rom, kxml, xcfe, xjson, xshard, pi-enforcement, KLSL shader PEG; ebnf-parser + grammar-validator tooling |
 | `klsl/` | KLSL kernel sources — the K'UHUL shader IR (`.kuhul` → HLSL / WGSL / GLSL) |
 | `kxc/` | KXC compiler v1 — `.kuhul` kernel descriptor → HLSL / WGSL / SMCA JSON / CPU C++ |
@@ -54,6 +54,42 @@ Declarative inference graph format with tool-aware Jinja chat templates. One KXM
 - `KLSL` — math lowering layer (`.kuhul` → HLSL / WGSL / GLSL), stays in `klsl/`
 - `KXML` — graph topology, orchestration stubs only
 - C++ / C# / PS1 — system boundary only; no application logic
+
+---
+
+## gen.py — adviser→coder pipeline
+
+`tools/gen.py` is a two-model generation pipeline: an adviser model (Gemma 3 1B) produces a 5–8 bullet implementation brief, then a coder model (Qwen3 1.7B) generates code using the brief as context.
+
+```bash
+# Plain generation
+python tools/gen.py "build a dark mode toggle"
+
+# Edit an existing file in place
+python tools/gen.py --edit path/to/file.html "add a search bar to the header"
+
+# Patch an existing file in place
+python tools/gen.py --patch path/to/file.js "replace hardcoded port 8080 with process.env.PORT"
+
+# Use local llama-cpp-python backend instead of HTTP server
+python tools/gen.py --local "landing page for GPU inference toolkit"
+```
+
+Or import as a module:
+```python
+from tools.gen import gen
+result = gen("add error handling", file="server.js", mode="edit")
+# returns: {"plan": ..., "code": ..., "written": bool, "file": ...}
+```
+
+Configure via environment variables:
+| Variable | Default |
+|----------|---------|
+| `KHANARY_INFER_URL` | `http://127.0.0.1:9000/v1/chat/completions` |
+| `KHANARY_ADVISER_MODEL` | `E:\models\GEMMA\gemma-3-1b-Q4_K_M.gguf` |
+| `KHANARY_CODER_MODEL` | `C:\Users\canna\.lmstudio\models\...\Qwen3-1.7B-Q8_0.gguf` |
+
+The HTTP backend (`--http`, default) expects a running `llama-server` on port 9000. The local backend (`--local`) loads GGUFs in-process via `llama-cpp-python`.
 
 ---
 
