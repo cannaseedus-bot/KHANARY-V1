@@ -19,17 +19,11 @@ Or import and call gen() directly:
 
 import argparse
 import json
-import os
 import sys
 import urllib.request
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Config — override via environment variables
-# ---------------------------------------------------------------------------
-INFER_URL     = os.environ.get("KHANARY_INFER_URL",     "http://127.0.0.1:9000/v1/chat/completions")
-ADVISER_MODEL = os.environ.get("KHANARY_ADVISER_MODEL", r"E:\models\GEMMA\gemma-3-1b-Q4_K_M.gguf")
-CODER_MODEL   = os.environ.get("KHANARY_CODER_MODEL",   r"C:\Users\canna\.lmstudio\models\lmstudio-community\Qwen3-1.7B-GGUF\Qwen3-1.7B-Q8_0.gguf")
+from config import INFER_URL, ADVISER_MODEL, CODER_MODEL
 
 _adviser = None
 _coder   = None
