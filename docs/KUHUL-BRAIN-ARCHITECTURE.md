@@ -314,6 +314,22 @@ REVOLUTION 1
 
 **Grams help the runtime find and bind the graph; they don't become the graph.**
 
+### Current implementation vs. target
+
+`micronaut-v4/` contains the SCXQ7 definition with two n-ary containers and ~850 MB of n-grams and micronaut-grams. This is the original KHA-NARY n-gram corpus — but those grams are **stack-trace and random-information sourced**: they capture surface co-occurrence from runtime observations, not relationships derived from GraphDB topology.
+
+The architecture described here targets **semantically structured** n-ary grams:
+
+| | Current (micronaut-v4 SCXQ7) | Target (this architecture) |
+|---|---|---|
+| Source | Stack traces, runtime random info | GraphDB topology + semantic identity |
+| Coherence | Statistical co-occurrence | Semantic node binding |
+| Size | ~850 MB | Derived from graph; compact |
+| Phase-aware | No | Yes — grams sorted into Pop/Wo/Yax/Sek/Ch'en/Xul |
+| Dynamic | Static corpus | `grams_{n+1} = Compile/Resolve(G_{n+1})` |
+
+The 850 MB corpus remains useful as a **prior / bootstrap signal** — it encodes real runtime patterns. The upgrade is giving those grams semantic identity by grounding them in the GraphDB rather than treating them as flat string n-tuples.
+
 ---
 
 ## MX2DB / IDB memory schema
