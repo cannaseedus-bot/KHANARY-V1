@@ -12,7 +12,7 @@ KHANARY encodes tensor operations and control flow into 32-bit **Knowledge Numer
 |-----------|----------|
 | `models/` | Birdsong geometry model (STB format, KNU encoding, HLSL/WGSL kernels) |
 | `docs/` | STB format spec, birdsong geometry grammar, tensor fields, brain schema |
-| `tools/` | STB read/write, brain→STB, GGUF→STB, safetensors→STB converters; `gen.py` two-model adviser→coder pipeline |
+| `tools/` | STB read/write, brain→STB, GGUF→STB, safetensors→STB converters; `gen.py` / `gen.mjs` two-model adviser→coder pipeline |
 | `grammar/` | `KHANARY.EBNF` — unified K'UHUL grammar v7.0.0 (1496 lines, 23 sections); sub-grammars: kast, kfold, khl-rom, kxml, xcfe, xjson, xshard, pi-enforcement, KLSL shader PEG; ebnf-parser + grammar-validator tooling |
 | `klsl/` | KLSL kernel sources — the K'UHUL shader IR (`.kuhul` → HLSL / WGSL / GLSL) |
 | `kxc/` | KXC compiler v1 — `.kuhul` kernel descriptor → HLSL / WGSL / SMCA JSON / CPU C++ |
@@ -61,8 +61,16 @@ Declarative inference graph format with tool-aware Jinja chat templates. One KXM
 
 `tools/gen.py` is a two-model generation pipeline: an adviser model (Gemma 3 1B) produces a 5–8 bullet implementation brief, then a coder model (Qwen3 1.7B) generates code using the brief as context.
 
+Both `tools/gen.py` (Python) and `tools/gen.mjs` (Node.js) implement the same pipeline. The Node version uses `node-llama-cpp` with WebGL2 as the default GPU backend; use `--http` to switch to the llama-server.
+
 ```bash
-# Plain generation
+# Node — WebGL2 GPU (default)
+npm install
+node tools/gen.mjs "build a dark mode toggle"
+node tools/gen.mjs --edit path/to/file.html "add a search bar"
+node tools/gen.mjs --http "task"          # switch to HTTP server
+
+# Python — HTTP server (default) or llama-cpp-python --local
 python tools/gen.py "build a dark mode toggle"
 
 # Edit an existing file in place

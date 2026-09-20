@@ -1,0 +1,12 @@
+{
+  "name": "khanary-v1",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Khanary-V1 tools and inference pipeline",
+  "scripts": {
+    "gen": "node tools/gen.mjs"
+  },
+  "dependencies": {
+    "node-llama-cpp": "^3.0.0"
+  }
+}
