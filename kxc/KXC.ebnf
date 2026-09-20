@@ -1,0 +1,409 @@
+(* KXC.ebnf — formal grammar for K'UHUL kernel descriptor files (.kuhul)
+ *
+ * Normative for: versions/kxc-v1.0.0/src/parser.cpp  parse_kuhul()
+ * File extension: .kuhul
+ * Notation: ISO/IEC 14977 EBNF
+ *
+ * A .kuhul file encodes exactly ONE kernel block.
+ * The parser stops after the first complete [Pop]…[Xul] block.
+ *)
+
+(* ── Top level ─────────────────────────────────────────────────────────────── *)
+
+file   = { skipped-line } kernel { skipped-line } ;
+
+kernel = pop-stmt { body-stmt } xul-stmt ;
+
+(* ── Statements ────────────────────────────────────────────────────────────── *)
+
+pop-stmt   = bracket-expr( "Pop"   , identifier ) ;
+xul-stmt   = bracket-expr( "Xul"   ) ;
+muwan-stmt = bracket-expr( "Muwan" , "dispatch" , uint , uint , uint ) ;
+sek-stmt   = bracket-expr( "Sek"   , identifier , sek-value ) ;
+yax-stmt   = bracket-expr( "Yax"   , { token } ) ;
+
+body-stmt  = muwan-stmt
+           | sek-stmt
+           | yax-stmt
+           | skipped-line ;
+
+(* ── Bracket expression (the fundamental unit) ─────────────────────────────── *)
+(*
+ * tokenise_bracket() scans each trimmed line for "[" … "]" (last "]" on line),
+ * then splits the interior by ASCII whitespace.
+ * Lines with no "[" → silently skipped regardless of content.
+ *)
+
+bracket-expr(keyword, args...) = "[" , keyword , { ws , token } , "]" ;
+
+(* ── [Sek] value ───────────────────────────────────────────────────────────── *)
+(*
+ * parse_bool(): "true" | "1" | "yes" → true; anything else → false.
+ * Unknown property names are silently accepted (no KernelDesc field set).
+ *)
+
+sek-value  = bool-literal | token ;
+bool-literal = "true" | "false" | "1" | "yes" ;
+
+(* ── Known [Sek] property names (classifier dispatch) ─────────────────────── *)
+(*
+ * Inference / attention
+ *   needsSoftmax  needsMatMul  needsDecompress  kvInt4  needsPhaseMatch
+ *
+ * MoE routing
+ *   needsMoERoute  needsMoEExpertFFN  needsMoECombine
+ *
+ * Mesh / vertex (WebGPU patterns)
+ *   needsNormalCompute  needsTangentFrame  needsMeshlet  needsVertexProcess
+ *
+ * Training (xshard_adapt / xshard_backward pipeline)
+ *   needsAdam         needsGradAccum    needsSiluGrad
+ *   needsGradClip     needsShmRead      needsValueClamp
+ *
+ * Full dispatch table: see lower.cpp classify() and VERSION.json active_classes.
+ *)
+
+sek-property = "needsSoftmax"       | "needsMatMul"      | "needsDecompress"
+             | "kvInt4"             | "needsPhaseMatch"
+             | "needsMoERoute"      | "needsMoEExpertFFN" | "needsMoECombine"
+             | "needsNormalCompute" | "needsTangentFrame" | "needsMeshlet"
+             | "needsVertexProcess"
+             | "needsAdam"         | "needsGradAccum"    | "needsSiluGrad"
+             | "needsGradClip"     | "needsShmRead"      | "needsValueClamp"
+             | identifier ;         (* unknown properties silently accepted *)
+
+(* ── Capability header declarations ($-prefixed) ───────────────────────────── *)
+(*
+ * $-declarations annotate the host, runtime, API surface, sandbox, training
+ * pipeline, chat mode, and KHLC output target for a .kuhul file.
+ *
+ * They appear BEFORE or ALONGSIDE the kernel bracket block.  Because they
+ * contain no "[" character, kxc's parse_kuhul() silently skips them — they
+ * match the no-bracket-line / skipped-line rule below.
+ *
+ * They are normative for klslc (the KHLC / CSS-C compiler) and for
+ * kuhul-server routing decisions; they are NOT parsed by kxc.
+ *
+ * Syntax:  "$" cap-key "=" cap-value line-end
+ * Example:
+ *   $Host    = PRIMEOS
+ *   $Runtime = D3D11
+ *   $KHLC    = psm1
+ *)
+
+cap-decl    = "$" , cap-key , ws , "=" , ws , cap-value , line-end ;
+
+cap-key     = "Host" | "Runtime" | "API" | "Sandbox" | "Trainer" | "Chat" | "KHLC" ;
+
+cap-value   = host-val | runtime-val | api-val | sandbox-val
+            | trainer-val | chat-val | khlc-val
+            | token ;                    (* unknown values silently accepted by klslc *)
+
+host-val    = "PRIMEOS" | "Windows" | "Node" | "Browser" | "PowerShell" ;
+(*
+ * $Host = PRIMEOS      — K'UHUL shell / GHOST Emerald glassmorphic surface
+ * $Host = PowerShell   — .psm1 module output (chat UI, BOSS, SHM bridge)
+ * $Host = Node         — Node.js process (kuhul-server, WebX service mesh)
+ * $Host = Browser      — sw.js / PWA runtime (WebGPU, IndexedDB)
+ * $Host = Windows      — bare Win32 / DML / D3D11 surface (default)
+ *)
+
+runtime-val = "DML" | "D3D11" | "D3D12" | "WGSL" | "CPU" | "OpenCL" ;
+(*
+ * $Runtime = DML    — DirectML (Intel HD 4600 primary path)
+ * $Runtime = D3D11  — D3D11 compute (XCFE executor default)
+ * $Runtime = D3D12  — D3D12 compute (MoE / mesh kernels)
+ * $Runtime = WGSL   — WebGPU shading language (Browser host)
+ * $Runtime = CPU    — scalar CPU fallback
+ * $Runtime = OpenCL — OpenCL fallback (legacy)
+ *)
+
+api-val     = "MCP" | "REST" | "kuhul-server" | "WebX" ;
+(*
+ * $API = MCP           — Model Context Protocol (10 tools, port 17474)
+ * $API = REST          — raw REST surface (ports 8787/8090/9080/7430/8764)
+ * $API = kuhul-server  — kuhul-server MCP gateway (default)
+ * $API = WebX          — WebX server (browser-facing REST + WS)
+ *)
+
+sandbox-val = "kast" | "driver-only" | "scxq2" ;
+(*
+ * $Sandbox = kast        — KAST admission surface (Ed25519-signed dispatch)
+ * $Sandbox = driver-only — driver-only KAST; toDriverOnly gate enforced
+ * $Sandbox = scxq2       — SCXQ2 executor context (XCFE, mode bits)
+ *)
+
+trainer-val = "xshard_adapt" | "xshard_backward" | "fold" ;
+(*
+ * $Trainer = xshard_adapt    — Adam weight update via xshard_adapt.exe
+ * $Trainer = xshard_backward — gradient production via xshard_backward.exe
+ * $Trainer = fold            — DDS/SCXQDDS fold/tile GPU training loop
+ *)
+
+chat-val    = "completion" | "tool" | "stream" ;
+(*
+ * $Chat = completion — single-turn completion (kuhul-server /v1/completions)
+ * $Chat = tool       — tool-call mode (MCP tool_call micronaut)
+ * $Chat = stream     — streaming SSE output
+ *)
+
+khlc-val    = "css-c" | "wgsl" | "hlsl" | "node" | "sw.js" | "html"
+            | "psm1" | "markup" | "animation" | "projection" ;
+(*
+ * KHLC = K'UHUL Shader Language + CSS-C bridge.
+ * CSS-C is the bridge from KLSL compute kernels to browser/host surfaces.
+ *
+ * $KHLC = psm1
+ *   klslc emits a PowerShell module (.psm1) — the CSS-C bridge to the
+ *   PowerShell chat surface (see micronaut-v4/Chat/Chat.psm1).
+ *   Exported functions: Invoke-KuhulCompletion, Send-FoldMessage, Watch-Stream.
+ *   Used by PRIMEOS shell, BOSS PS1 apps, and the kuhul-runtime.psm1 layer.
+ *
+ * $KHLC = node
+ *   CSS-C bridge target: Node.js module (kuhul-server, WebX, MCP gateway).
+ *
+ * $KHLC = sw.js
+ *   CSS-C bridge target: Service Worker (PWA, Browser host, IndexedDB cache).
+ *
+ * $KHLC = html | markup
+ *   CSS-C emits HTML markup with embedded KLSL compute dispatches.
+ *   Markup is HTML; CSS-C can produce layout, components, and glyph surfaces.
+ *
+ * $KHLC = animation
+ *   CSS-C geometric output: animated glyph rendering via DirectWrite / WebGPU.
+ *   Driven by K-CUBE SH projection (Pop↔Xul phase oscillation, π/3 steps).
+ *
+ * $KHLC = projection
+ *   CSS-C geometric output: K-CUBE SH projection → dominant_micronaut routing.
+ *   6-face tensor [6,1024,1024,4]; face angles Pop=0, Wo=π/3, Yax=2π/3, …
+ *
+ * $KHLC = css-c
+ *   Raw CSS-C pass-through; klslc chooses output format from $Host.
+ *
+ * $KHLC = wgsl | hlsl
+ *   Low-level shader output (WGSL for Browser/WebGPU, HLSL for D3D11/DML).
+ *   Same targets as kxc's --emit flag, but driven through the CSS-C pipeline.
+ *)
+
+(* ── CSS is already a cascading math engine — nothing invented ──────────────── *)
+(*
+ * CSS is a declarative dataflow engine with a built-in constraint solver, a
+ * priority resolution algorithm, and a time-series state machine — running
+ * natively in every browser.  CSS-C bridges that engine to KLSL GPU kernels.
+ * The agents don't add computation; they route CSS's existing computation to
+ * the right execution surface.
+ *
+ * WebView2 / WebGL2 / WebGPU:
+ *   PRIMEOS already embeds WebView2 (Microsoft.Web.WebView2 NuGet, PRIMEOSShell.xaml).
+ *   Modern WebView2 runtimes (Edge 113+, mid-2023) ship WebGPU enabled by default —
+ *   navigator.gpu is available in primeos-app.html with no additional flags.
+ *   WebGL2 has been available in WebView2 since Chromium 56.
+ *   WebGPU uses the D3D12 backend on Windows, so Intel HD 4600 is reachable.
+ *   Full pipeline via $KHLC = wgsl:
+ *     klslc emits WGSL source
+ *       -> C# bridge: MainWebView.CoreWebView2.ExecuteScriptAsync(wgsl_source)
+ *       -> navigator.gpu.requestAdapter() inside WebView2
+ *       -> device.createComputePipeline(wgsl_source)
+ *       -> GPU (D3D12 backend)
+ *   $Runtime = WGSL + $Host = Browser maps to this path in the cap-decl grammar.
+ *
+ * KSHTML naming clarification:
+ *   KSHTML (drivers/klsl/kshtml-runtime.kuhul) is a tree PARSER, not a renderer.
+ *   It reads XML/XHTML/MathML structure and produces an AST.
+ *   Rendering is WebView2's job — they are complementary:
+ *     KSHTML   reads structure  (XML -> AST -> CSS-C annotations -> klslc)
+ *     WebView2 renders + runs  (HTML/CSS/JS/WebGPU in Chromium)
+ *   KSHTML never touches the GPU; WebView2 does via WebGL2 / WebGPU.
+ *
+ * MathML extension:
+ *   MathML adds a browser-native expression AST — no parsing step invented.
+ *   Every MathML element IS an AST node:
+ *     <msup><mi>x</mi><mn>2</mn></msup>  = AST node for x²
+ *     <mtable>                            = matrix structure
+ *     <mrow>                             = grouping / parenthesisation
+ *     <mo>                               = operator node
+ *   CSS can already query the MathML DOM:
+ *     :has(msup)   = expression contains exponentiation
+ *     :has(mfrac)  = expression contains division
+ *     :has(mo)     = expression contains an operator
+ *   Custom properties on MathML elements = compiler annotations for klslc.
+ *   KSHTML (drivers/klsl/kshtml-runtime.kuhul) already parses the XML.
+ *   Full pipeline, nothing invented:
+ *     MathML DOM (expression AST)
+ *       -> CSS-C annotates / queries the tree (custom props as KLSL op tags)
+ *       -> KSHTML reads the XML structure (existing runtime)
+ *       -> klslc compiles annotated nodes -> KLSL / WGSL kernel
+ *       -> GPU
+ *   Scope note: CSS does NOT evaluate mathematical expressions.
+ *   differentiate() / gradient() as CSS functions do not exist.
+ *   The computation happens in klslc + the generated kernel, not in CSS.
+ *   CSS's role is annotation and structural query of the MathML AST.
+ *
+ * CSS-C is a bridge, not an invention.  The structural equivalences between CSS
+ * and the khanary fold/SHM/dispatch system were already present in both languages.
+ * CSS-C makes those equivalences explicit and lets each reader parse its own half:
+ * kxc reads [brackets], klslc reads $declarations, the browser reads CSS.
+ *
+ * Scope note — what holds as structural identity vs analogy:
+ *   IDENTITY (same algorithm, different notation):
+ *     cascade resolution, @layer ordering, !important reverse cascade,
+ *     --custom-property propagation, inherit/revert/initial, specificity scoring,
+ *     CSS Grid constraint solving, @keyframes state machine.
+ *   ANALOGY (related concept, not the same operation):
+ *     color-mix() as encryption, specificity as cryptographic hash — CSS has no
+ *     hash primitive; SHA-256 in SCXQ2 operates on actual bytes.
+ *   OUT OF SCOPE for CSS alone (requires browser APIs alongside CSS):
+ *     fetch(), WebSocket, @font-face network loading — these are browser APIs,
+ *     not CSS.  CSS has no network stack.
+ *   TURING COMPLETENESS:
+ *     CSS alone is not Turing complete.  It can simulate finite automata via
+ *     hover + sibling selectors, but requires the DOM + user interaction as the
+ *     tape head.  Houdini paint worklets extend this but introduce JavaScript.
+ *
+ * CSS already provides:
+ *   calc() min() max() clamp()     — arithmetic over the full property space
+ *   --custom-property              — typed variable/state system that cascades
+ *   the cascade itself             — weighted priority resolution = constraint solver
+ *   @layer ordering                — explicitly named priority stacks
+ *   !important                     — inverts the cascade (second pass, reversed)
+ *   @keyframes + timing-function   — time-series state machine with bezier math
+ *   :has() / container queries     — relational graph queries over the DOM tree
+ *   CSS Grid                       — linear constraint solver (solves equations)
+ *   inherit / revert / initial     — dataflow propagation and state reset
+ *   color-mix() oklch()            — color-space matrix transforms
+ *
+ * Structural identity with the khanary fold system:
+ *
+ *   CSS                           | Khanary
+ *   ------------------------------|----------------------------------------
+ *   @layer ordering               | fold phase order (Pop=0 → Xul=5π/3)
+ *   !important (reverse cascade)  | backward pass — gradient overrides fwd
+ *   --custom-property             | SHM lane (persists, cascades down tree)
+ *   inherit                       | tensor broadcast down K-CUBE face
+ *   revert                        | pop to previous fold state
+ *   initial                       | reset weight to base checkpoint
+ *   specificity score             | [Sek] flag priority in classify()
+ *   cascade resolution            | lower.cpp classify() — first match wins
+ *   @keyframes Pop↔Xul            | phase oscillation π/3 per step
+ *   !important (low-spec wins)    | xshard_backward: error signal overrides
+ *
+ * @layer IS explicit fold ordering.
+ * !important IS the backward pass — two cascades running simultaneously,
+ *   one forward (normal declarations = forward fold), one reverse
+ *   (!important declarations = gradient / xshard_backward).
+ * The cascade IS classify().  The selector IS the kernel class.
+ * The custom property IS the [Sek] flag.  The layer stack IS the fold stack.
+ *)
+
+(* ── Skipped lines ─────────────────────────────────────────────────────────── *)
+(*
+ * Three forms are silently skipped:
+ *   1. Empty / blank lines (only whitespace after trim)
+ *   2. Lines whose first non-whitespace char is '#'
+ *   3. Lines that contain no '[' character
+ *      (This is how (* ... *) block comment lines work — they have no '[',
+ *       so tokenise_bracket returns empty and the line is ignored.)
+ *)
+
+skipped-line = blank-line | hash-comment | no-bracket-line ;
+
+blank-line      = { ws-char } , line-end ;
+hash-comment    = { ws-char } , "#" , { any-char } , line-end ;
+no-bracket-line = { non-bracket-char } , line-end ;  (* no "[" present *)
+
+(* Informal block comment (works only if body contains no "[" or "]") *)
+block-comment   = "(*" , { any-char } , "*)" ;
+
+(* ── Lexical primitives ────────────────────────────────────────────────────── *)
+
+identifier = letter , { letter | digit | "-" | "_" | "'" } ;
+uint       = digit , { digit } ;
+token      = non-ws-char , { non-ws-char } ;   (* any non-whitespace sequence *)
+
+letter     = "A" | … | "Z" | "a" | … | "z" ;
+digit      = "0" | … | "9" ;
+ws-char    = " " | "\t" ;
+ws         = ws-char , { ws-char } ;
+
+any-char         = ? any Unicode scalar value ? ;
+non-ws-char      = ? any char except SP, HT, CR, LF ? ;
+non-bracket-char = ? any char except "[" ? ;
+line-end         = [ "\r" ] , "\n" | ? end of file ? ;
+
+(* ── Constraints (not expressible in EBNF) ─────────────────────────────────── *)
+(*
+ * C1. Exactly one kernel block per file. The parser returns after the first [Xul].
+ * C2. [Pop] must precede all other statements. [Muwan], [Sek], [Yax] outside a
+ *     block are parse errors.
+ * C3. [Xul] without a preceding [Pop] is a parse error.
+ * C4. Nested [Pop] (inside an open block) is a parse error.
+ * C5. [Muwan] must have exactly "dispatch" + 3 unsigned integers; other Muwan
+ *     forms are silently ignored (no error, thread dims not updated).
+ * C6. [Sek] requires at least 2 tokens after the keyword (property + value);
+ *     fewer tokens is a parse error.
+ * C7. Any bracket keyword other than Pop/Muwan/Sek/Yax/Xul is a parse error:
+ *     "unsupported syntax '<kw>'".
+ * C8. Thread dimensions are uint32; values > 2^32-1 are implementation-defined.
+ *)
+
+(* ── Minimal valid file ─────────────────────────────────────────────────────── *)
+(*
+ *   [Pop my_kernel]
+ *     [Muwan dispatch 64 1 1]
+ *     [Sek needsAdam true]
+ *   [Xul]
+ *)
+
+(* ── Minimal file with capability declarations ──────────────────────────────── *)
+(*
+ * $-declarations are silently skipped by kxc (no "[") but consumed by klslc.
+ *
+ *   $Host    = PRIMEOS
+ *   $Runtime = D3D11
+ *   $Trainer = xshard_adapt
+ *   $KHLC    = psm1
+ *   [Pop adam_kernel]
+ *     [Muwan dispatch 64 1 1]
+ *     [Sek needsAdam true]
+ *   [Xul]
+ *
+ * klslc reads the four $-lines, routes the kernel to xshard_adapt, and
+ * emits Chat.psm1 (PowerShell chat UI module) for the PRIMEOS host.
+ * kxc sees only the bracket block and classifies kernelClass=adam_optimizer.
+ *)
+
+(* ── Full-form K'UHUL (non-normative for kxc) ──────────────────────────────── *)
+(*
+ * The files in drivers/klsl/ (e.g. adam.kuhul, cssc_gemm.kuhul) use an extended
+ * K'UHUL surface that is NOT compiled by kxc. They target klslc / the semantic
+ * layer and include additional tokens:
+ *
+ *   [Wo  <name> <type>]         — input / parameter declarations
+ *   [K'ayab']                   — loop start  (KLSL K'AYAB glyph)
+ *   [Kumk'u]                    — loop end    (KLSL KUMK'U glyph)
+ *   [Ch'en <expr>]              — collect / output binding
+ *   [Sek  <expr> -> <binding>]  — expression with result binding
+ *   [Pop  <name> = <call>]      — named read (shm_read, etc.)
+ *   [Xul  <call>]               — write / emit (shm_write, xshard_write)
+ *
+ * kxc's parse_kuhul() will reject any of these forms that use bracket keywords
+ * it does not recognise (e.g. [Wo …] → "unsupported syntax 'Wo'").
+ * The kxc-compilable "descriptor stub" in versions/kxc-v1.0.0/drivers/klsl/
+ * uses only Pop/Muwan/Sek/Xul with bool property flags.
+ *
+ * $-capability declarations (defined in the cap-decl rule above) also appear in
+ * full-form .kuhul files.  kxc silently skips them (no "[").  klslc / KHLC reads
+ * them to determine:
+ *   — $Host     → which shell/runtime receives the compiled output
+ *   — $Runtime  → which GPU/CPU backend to target
+ *   — $API      → which service mesh the kernel is registered on
+ *   — $Sandbox  → KAST / driver-only / SCXQ2 admission gate
+ *   — $Trainer  → which xshard exe drives the training fold
+ *   — $Chat     → completion / tool / stream output mode
+ *   — $KHLC     → CSS-C output target (psm1, node, sw.js, html, animation, …)
+ *
+ * The CSS-C bridge ($KHLC) is what gives .kuhul files reach into Node.js,
+ * sw.js, HTML markup, graphics, animation, and PowerShell chat UI — markup is
+ * HTML, so CSS-C provides layout, projection, and glyph rendering on the same
+ * D3D11 / DirectWrite hardware lineage used by kuhul inference.
+ *)

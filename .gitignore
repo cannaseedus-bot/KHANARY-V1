@@ -26,6 +26,9 @@ Debug/
 *.3D
 *.mesh
 *.bin
+*.cso
+*.wasm
+*.scx2
 **/.asx/
 **/node_modules/
 *.pyc

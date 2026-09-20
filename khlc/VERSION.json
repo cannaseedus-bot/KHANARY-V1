@@ -1,0 +1,66 @@
+{
+  "name": "khlc",
+  "version": "1.0.0",
+  "status": "compiler-complete-admission-gate-verified",
+  "release_type": "python-tools-with-examples",
+  "created": "2026-08-31",
+  "tools": {
+    "compiler": {
+      "path": "versions/khlc-v1.0.0/tools/khlc.py",
+      "canonical_source": "tools/khlc.py",
+      "language": "Python 3",
+      "input": [".kuhul", ".khl"],
+      "output": ["KAST (kast/1)", "KSON (.kson)"],
+      "pipeline": "source → tokenize → expand_includes → parse_phases → parse_glyphs → emit_kast → serialize_kson"
+    },
+    "admission_gate": {
+      "path": "versions/khlc-v1.0.0/tools/kson_validate.py",
+      "canonical_source": "tools/kson_validate.py",
+      "validates": ["protocol == kast/1", "semantic_hash", "@driver.@hash", "@abi", "capabilities", "provider", "phase_hooks"]
+    }
+  },
+  "compiler_surfaces": {
+    "semantic_modules": {
+      "extension": ".kuhul",
+      "syntax": "phase-block (⟁ Phase ⟁ … bind / probe / resolve / dispatch / collect_status / commit)",
+      "example": "examples/stdlib/pi.kuhul",
+      "stdlib": "stdlib/ (18 modules: core, constants, pi, functions, geometry, fibonacci, gravity, glsl, hlsl, vectors, matrices, tensors, statistics, random, colors, time, audio, image)"
+    },
+    "driver_contracts": {
+      "extension": ".khl",
+      "syntax": "glyph ns::name(ARGS) → op::call(ARGS) → RESULT  (+ @bind, if/for/yield)",
+      "example": "examples/drivers/fold.khl",
+      "drivers": "drivers/khl/ (opengl, phase, fold, attention.fold, gpt2.runtime, inference, sw)"
+    }
+  },
+  "output_format": {
+    "protocol": "kast/1",
+    "fields": ["protocol", "registry_hash", "source_kind", "source_id", "entry_node_id", "nodes", "edges", "semantic_hash", "@driver", "includes"],
+    "node_fields": ["id", "kind", "fold", "lane", "glyph", "opcode", "symbol", "type", "operands", "attributes"],
+    "edge_fields": ["id", "from", "to", "kind", "label", "ordinal"]
+  },
+  "reference_program": {
+    "source": "examples/stdlib/pi.kuhul",
+    "description": "Canonical conformance program — exercises all 6 phase folds, one provider binding, full node/edge trace",
+    "canonical_node_sequence": [
+      "n1  Pop  BIND     π = 3.141592653589793",
+      "n2  Pop  PROBE    geometry",
+      "n3  Wo   BIND     radius = 8",
+      "n4  Wo   BIND     area = π * radius * radius",
+      "n5  Yax  RESOLVE  provider = geometry.compute",
+      "n6  Sek  DISPATCH provider(area)",
+      "n7  Ch'en COLLECT result",
+      "n8  Xul  COMMIT   result"
+    ]
+  },
+  "providers": {
+    "opengl": "glsl_gpu sidecar",
+    "phase": "json_runtime native.PHASE",
+    "gpt2.runtime": "kuhul_engine"
+  },
+  "docs": "KUHUL.md",
+  "related": {
+    "kxc": "versions/kxc-v1.0.0",
+    "smca_registry": "SMCA-registry"
+  }
+}
