@@ -1520,6 +1520,193 @@ This is the recursive behavior: each `2π` revolution can literally expose new c
 
 ---
 
+## µN-ary RAG — semantic search vs. semantic query
+
+### The distinction
+
+$$
+\boxed{\text{Semantic Search} = \text{find relevant information}}
+$$
+
+$$
+\boxed{\text{Semantic Query} = \text{derive information from structured relationships}}
+$$
+
+$$
+\boxed{\mu N\text{-ary RAG} = \text{combine retrieved, relational, structural and higher-order evidence}}
+$$
+
+**Search** answers: *what information seems related to this?*
+
+**Query** answers: *what follows from the relationships already represented here?*
+
+### Query model
+
+A semantic query over the Brain:
+
+$$
+\boxed{Q + G + Relations + Rules + Context \rightarrow \text{derive an answer}}
+$$
+
+can traverse declared relationships and derive candidates deterministically:
+
+```
+X ──is-a────► Mammal
+│
+├──has──────► Property A
+│
+└──related──► Z
+                 └──implies──► Property B
+```
+
+Example bounded relational query inside `N_k[X]`:
+
+```sparql
+find ?Z
+WHERE:  X --depends_on--> ?Y
+        ?Y --produces--> ?Z
+CONSTRAINT:  weight(X,Y) > 0.7
+             earned_confidence(Y) > 0.8
+```
+
+This returns every `Z` satisfying the declared structural conditions — no LLM required.
+
+$$
+\boxed{\text{Query result} \neq \text{final answer}}
+$$
+
+Query results are **evidence/candidates entering Yax**.
+
+### The ARC is already the predicate
+
+A SPARQL-style triple `(subject, predicate, object)` maps directly to:
+
+$$
+\boxed{Triple = (X, Y, Z)}
+$$
+
+where `Y` is the typed directed ARC. No intermediate ARC-node is needed unless the ARC itself requires first-class relationships.
+
+N-ary grams extend triples to higher-order configurations:
+
+```
+binary:      (X, Y, Z)
+3-ary gram:  g(X, Y, Z)
+k-ary gram:  g(N₁, N₂, ..., Nₖ)
+```
+
+The semantic query engine can pattern-match against higher-order gram configurations, not just binary triples.
+
+### Two retrieval modes
+
+| Mode | Mechanism | Answers |
+|------|-----------|---------|
+| Semantic search | Embedding / gram / pattern match | "What seems related?" |
+| Semantic query | Graph pattern / relational traversal | "What follows from declared structure?" |
+
+Combined evidence:
+
+$$
+\boxed{Evidence(Q) = E_{search} + E_{query} + E_{gram} + E_{structural}}
+$$
+
+(combination law is explicit — not literal numerical addition)
+
+### Three knowledge classes
+
+```
+EXPLICIT
+stored node / ARC attributes
+        │
+        ▼
+DERIVED
+graph properties, paths,
+neighborhoods, matrix powers, cycles
+        │
+        ▼
+INFERRED
+semantic rules over explicit
+and derived information
+```
+
+Graph properties that can be **computed from structure** rather than stored:
+
+```
+Is G cyclic?              Is X connected to Z?
+What is N[X]?             What is degree(X)?
+Does X participate in a triangle?
+How many length-3 walks connect X and Z?
+What is the weight of this subgraph?
+```
+
+The model does not need to remember these — the Brain can answer questions about itself:
+
+$$
+\boxed{Q(G) \rightarrow Result}
+$$
+
+### Executor family for Sek
+
+```
+executor: graph.query          relational pattern match
+executor: graph.neighborhood   N_k[X] construction
+executor: graph.path           shortest/weighted path
+executor: graph.property       structural invariants (degree, cycles, ...)
+executor: graph.matrix_power   W^n reachability / route scores
+executor: graph.pattern        subgraph / gram pattern match
+executor: graph.weight         W(S) aggregate
+executor: semantic.query       SPARQL-style derivation
+executor: mathml               MathML expression evaluation
+executor: xslt                 representation transformation
+executor: openmath             symbolic math
+executor: llm                  fallback — fuzzy / unstructured gaps only
+```
+
+`executor = null` (LLM fallback) fires only when deterministic / structured evidence is insufficient.
+
+### The full pipeline
+
+```
+POP    parse / acquire Q
+ │
+WO     establish semantic state + N_k[X]
+ │
+YAX    semantic search + semantic query
+       rank candidate ARCs / grams / executors
+ │
+XCFE   validate proposed transitions
+ │
+SEK    dispatch executor:
+       graph.query / mathml / xslt / openmath / ... / llm
+ │
+CH'EN  compare result against graph, properties,
+       constraints and evidence
+ │
+XUL    collapse accepted result
+ │
+2π     ───► POP' — query refreshed Brain if necessary
+```
+
+$$
+\boxed{Yax = admission}
+$$
+
+$$
+\boxed{XCFE = authority}
+$$
+
+$$
+\boxed{Sek = execution}
+$$
+
+$$
+\boxed{Ch'en = verification / observation}
+$$
+
+The GraphDB is not memory for RAG. It is a **queryable reasoning substrate**.
+
+---
+
 ## Architecture summary diagram
 
 ```
