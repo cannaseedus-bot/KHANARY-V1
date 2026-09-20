@@ -1,0 +1,72 @@
+{
+  "_comment": "Versioned driver manifest for Khanary-V1 GPU inference stack. Keep in sync with tools/config.py.",
+
+  "inference_server": {
+    "binary": "llama-server",
+    "source": {
+      "repo": "https://github.com/ggml-org/llama.cpp",
+      "commit": "0b1bad14ff204627636aeb1de22ddcd5acb859d4",
+      "commit_date": "2026-08-11"
+    },
+    "local_build": "E:\\.llama.cpp\\build\\bin\\llama-server.exe",
+    "launch_command": "llama-server --model <path-to-model.gguf> --port 9000 --n-gpu-layers -1",
+    "endpoint": "http://127.0.0.1:9000/v1/chat/completions",
+    "note": "HTTP backend — gen.py default. Used when llama-server is already running."
+  },
+
+  "python_backend": {
+    "package": "llama-cpp-python",
+    "version": "0.3.23",
+    "gpu": "torch-directml",
+    "install": [
+      "pip install llama-cpp-python==0.3.23",
+      "pip install torch-directml"
+    ],
+    "note": "Used by gen.py --local. llama-cpp-python handles model loading; torch-directml provides DirectML GPU acceleration on Windows iGPU/dGPU without CUDA.",
+    "torch_directml_device": "import torch_directml; dml = torch_directml.device()"
+  },
+
+  "node_backend": {
+    "package": "node-llama-cpp",
+    "gpu": "webgl2",
+    "install": "npm install node-llama-cpp",
+    "note": "Node.js inference path. WebGL2 added to Node for GPU acceleration — covers any GPU with a WebGL2 driver (iGPU included).",
+    "usage": "import { getLlama } from 'node-llama-cpp'; const llama = await getLlama({ gpu: 'webgl' });"
+  },
+
+  "models": {
+    "adviser": {
+      "role": "implementation planner — produces 5–8 bullet brief",
+      "file": "gemma-3-1b-Q4_K_M.gguf",
+      "local_path": "E:\\models\\GEMMA\\gemma-3-1b-Q4_K_M.gguf",
+      "env_var": "KHANARY_ADVISER_MODEL",
+      "hf_repo": "ggml-org/gemma-3-1b-GGUF",
+      "hf_file": "gemma-3-1b-Q4_K_M.gguf",
+      "download": "huggingface-cli download ggml-org/gemma-3-1b-GGUF gemma-3-1b-Q4_K_M.gguf --local-dir E:\\models\\GEMMA"
+    },
+    "coder": {
+      "role": "code generator — returns complete working file",
+      "file": "Qwen3-1.7B-Q8_0.gguf",
+      "local_path": "C:\\Users\\<user>\\.lmstudio\\models\\lmstudio-community\\Qwen3-1.7B-GGUF\\Qwen3-1.7B-Q8_0.gguf",
+      "env_var": "KHANARY_CODER_MODEL",
+      "hf_repo": "lmstudio-community/Qwen3-1.7B-GGUF",
+      "hf_file": "Qwen3-1.7B-Q8_0.gguf",
+      "download": "huggingface-cli download lmstudio-community/Qwen3-1.7B-GGUF Qwen3-1.7B-Q8_0.gguf --local-dir <target-dir>"
+    }
+  },
+
+  "quick_start": [
+    "# HTTP mode (default) — requires llama-server already running on port 9000:",
+    "python tools/gen.py \"your task\"",
+    "",
+    "# Python local mode — loads GGUFs in-process via llama-cpp-python + torch-directml:",
+    "python tools/gen.py --local \"your task\"",
+    "",
+    "# Override model paths without editing config:",
+    "$env:KHANARY_CODER_MODEL = 'E:\\models\\mymodel.gguf'; python tools/gen.py \"your task\"",
+    "",
+    "# First-time model download (requires huggingface-hub: pip install huggingface-hub):",
+    "huggingface-cli download ggml-org/gemma-3-1b-GGUF gemma-3-1b-Q4_K_M.gguf --local-dir E:\\models\\GEMMA",
+    "huggingface-cli download lmstudio-community/Qwen3-1.7B-GGUF Qwen3-1.7B-Q8_0.gguf --local-dir <target-dir>"
+  ]
+}
