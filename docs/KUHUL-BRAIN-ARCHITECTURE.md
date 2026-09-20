@@ -1187,6 +1187,158 @@ $$
 
 ---
 
+## Graph cycles and phase closure
+
+### Geometric triangle ≠ graph triangle
+
+A graph triangle is a **3-cycle** — three vertices whose binary relationships close back:
+
+$$
+A \rightarrow B \rightarrow C \rightarrow A
+$$
+
+The closure is the important property, not the visual shape.
+
+```
+        B
+       / \
+      A---C
+
+binary ARCs:  A-B, B-C, C-A
+closed cycle: △(A, B, C)
+```
+
+Formal detection: a 3-cycle produces a length-3 closed walk, so its starting node appears on the diagonal of `A³`:
+
+$$
+(A^3)_{ii} > 0 \quad \Longleftrightarrow \quad \text{at least one length-3 closed walk from } i
+$$
+
+$$
+\operatorname{tr}(A^3) \propto \text{number of triangles in the graph}
+$$
+
+### Triangle as the first nontrivial closed semantic fold
+
+```
+2 nodes   A ↔ B             binary recurrence
+3 nodes   A → B → C → A    first simple multi-node closed cycle
+n nodes   ...               general closed semantic cycle
+```
+
+The triangle is special because it is the **smallest simple cycle in a simple graph** — not because it looks triangular.
+
+### Closed topology → supagrams
+
+Three binary ARCs produce one higher-order structure:
+
+$$
+\boxed{Gram_3(A, B, C) \leftrightarrow \text{closed 3-cycle over } A, B, C}
+$$
+
+n-ary grams can therefore describe **actual higher-order topology discovered in the semantic graph**, not arbitrary word combinations.
+
+```
+A ── B
+ \  /
+  C
+
+binary ARCs: A-B, B-C, C-A
+  ↓ closure
+3-ary structure: {A, B, C}
+  ↓
+candidate supagram: g(A, B, C)
+```
+
+### Weighted triangle
+
+A triangle with ARC weights is a weighted 3-cycle:
+
+$$
+\triangle(A, B, C,\; w_{AB},\; w_{BC},\; w_{CA})
+$$
+
+Aggregate weight (sum contract):
+
+$$
+W_\triangle = w_{AB} + w_{BC} + w_{CA}
+$$
+
+Cycle product (only meaningful if the semantic contract defines it):
+
+$$
+P_\triangle = w_{AB}\; w_{BC}\; w_{CA}
+$$
+
+$$
+\boxed{\text{graph weight aggregation} \neq \text{automatically probability}}
+$$
+
+The contract determines what aggregation means.
+
+### Phase wheel as a 6-cycle
+
+The K'UHUL FoldRoleGraph:
+
+```
+Pop → Wo → Yax → Sek → Ch'en → Xul
+ ↑                               │
+ └───────────────────────────────┘
+```
+
+is itself a cycle of length 6. If `P` is its adjacency matrix:
+
+$$
+(P^6)_{Pop,Pop} > 0 \quad \text{(six-step closed walk exists)}
+$$
+
+$$
+(P^k)_{ii} = 0, \quad 0 < k < 6 \quad \text{(no shortcut — simple cycle)}
+$$
+
+Two independent representations of the same invariant:
+
+$$
+\boxed{P^6: \text{graph-theoretic closure}}
+$$
+
+$$
+\boxed{2\pi: \text{phase/angular closure}}
+$$
+
+One can validate the other. The runtime can prove structurally that the FoldRoleGraph has not accidentally acquired a shortcut by verifying `(P^k)_{ii} = 0` for all `k < 6`.
+
+### The Birdsong open question
+
+The Birdsong Brain mesh (`mesh.svg`, 61,239 polygons) was rendered as visual triangulations over a 30,628-node / 91,863-edge semantic graph.
+
+**Open question:** do the SVG mesh triangles correspond to actual graph-theoretic 3-cycles in `graph.json`?
+
+Two very different interpretations:
+
+| Interpretation | What it means |
+|----------------|--------------|
+| **Geometric triangulation** | The triangles are tessellation artifacts — a rendering convenience for a continuous field. Topology in SVG, identity in GraphDB: separate. |
+| **Graph-theoretic 3-cycles** | The triangulated nodes are already 3-cycle participants in `graph.json`. SVG mesh = visual projection of semantic cycles. |
+
+If they coincide, the Birdsong Brain is already encoding:
+
+$$
+\boxed{
+\text{Graph topology}
+\leftrightarrow
+\text{higher-order cycles}
+\leftrightarrow
+\text{SVG mesh}
+\leftrightarrow
+\text{tensor field}
+}
+$$
+
+This can be tested by extracting triangle node-ID triples from `mesh.svg` and checking them against the edge list in `graph.json`.
+
+---
+
 ## Architecture summary diagram
 
 ```
