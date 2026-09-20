@@ -15,57 +15,66 @@ reference the same six angular coordinates.
 
 ---
 
-## LLM inference stack (Khanary-V1 tools)
+## LLM inference stack — tools/gen.py · tools/gen.mjs
 
-Three confirmed working GPU inference paths for the gen.py / gen.mjs adviser→coder pipeline. Configuration lives in `tools/config.py` and `tools/drivers.json`.
+Two-model adviser→coder pipeline. Config in `tools/config.py`; driver versions in `tools/drivers.json`.
 
-| Path | GPU mechanism | Entry point |
-|------|---------------|-------------|
-| **llama-server HTTP** | WebGPU/Dawn via `ggml-webgpu.dll` + `webgpu_dawn.dll` | `tools/gen.py` (default), `tools/gen.mjs --http` |
-| **Python local** | `torch-directml` — DirectML on Windows iGPU/dGPU via D3D12 | `tools/gen.py --local` |
-| **Node local** | `node-llama-cpp` with WebGL2 (`getLlama({ gpu: 'webgl' })`) | `tools/gen.mjs` (default) |
+---
 
-### llama-server (WebGPU/Dawn)
+## llama-server — WebGPU/Dawn on Windows iGPU (`ggml-webgpu.dll` + `webgpu_dawn.dll`)
+
+**Target system**: Windows, Intel/AMD/NVIDIA iGPU or dGPU with WebGPU-capable driver. No CUDA, no D3D12 overhead — Dawn routes through the GPU's native WebGPU or GL path.
 
 ```
 E:\.llama.cpp\build\bin\llama-server.exe   (commit 0b1bad14f, 2026-08-11)
   ├── ggml-webgpu.dll   ← WebGPU compute backend
   ├── webgpu_dawn.dll   ← Google Dawn WebGPU implementation
-  ├── ggml.dll / ggml-base.dll / ggml-cpu.dll
-  └── llama.dll / llama-common.dll
+  └── ggml.dll / ggml-base.dll / ggml-cpu.dll / llama.dll / llama-common.dll
 ```
 
 Launch: `llama-server --model <gguf> --port 9000 --n-gpu-layers -1`
-Endpoint: `http://127.0.0.1:9000/v1/chat/completions` (set via `KHANARY_INFER_URL`)
+Entry point: `tools/gen.py` (HTTP default), `tools/gen.mjs --http`
+Override endpoint: `$env:KHANARY_INFER_URL`
 
-### Python local — torch-directml
+---
+
+## Python local — DirectML on Windows D3D12 (`torch-directml`)
+
+**Target system**: Windows 10/11, any GPU with a D3D12 driver — Intel HD 4600 and up, all modern AMD/NVIDIA. No CUDA purchase required. DirectML dispatches via `igd12umd64.dll` (Intel) or equivalent.
 
 ```
 pip install llama-cpp-python==0.3.23
 pip install torch-directml
 ```
 
-`torch_directml.device()` exposes DirectML as a PyTorch device. llama-cpp-python loads the GGUF; torch-directml handles GPU dispatch. No CUDA required.
+`torch_directml.device()` exposes DirectML as a PyTorch compute device. llama-cpp-python loads the GGUF; torch-directml handles GPU kernel dispatch.
+Entry point: `tools/gen.py --local`
 
-### Node local — node-llama-cpp + WebGL2
+---
+
+## Node local — WebGL2 on any OpenGL 4.3 GPU (`node-llama-cpp`)
+
+**Target system**: Any machine with an OpenGL 4.3 driver — Intel HD 4600 (`ig75icd64.dll`), AMD (Mesa / amdvlk), NVIDIA (`nvoglv64.dll`), every GPU made since 2012. WebGL2 compute is proven working on this iGPU via `GL_ARB_compute_shader` + SSBO (see OpenGL provider section below).
 
 ```
-npm install        (installs node-llama-cpp from package.json)
+npm install        # installs node-llama-cpp from package.json
+node tools/gen.mjs "your task"
 ```
 
-WebGL2 compute is proven working on this iGPU via `GL_ARB_compute_shader` + SSBO (see OpenGL provider section below). `node-llama-cpp` with `gpu: 'webgl'` routes through the same `ig75icd64.dll` ICD that WebGPU's GL backend uses.
+`getLlama({ gpu: 'webgl' })` routes through the system's OpenGL ICD — the same `ig75icd64.dll` path used by the ggml-xcfe bridge's WebGPU GL backend.
+Entry point: `tools/gen.mjs` (WebGL2 default)
 
-### Models (HuggingFace download)
+---
+
+## Model downloads (HuggingFace)
 
 ```powershell
-# Adviser — Gemma 3 1B Q4_K_M
+# Adviser — Gemma 3 1B Q4_K_M  (KHANARY_ADVISER_MODEL)
 huggingface-cli download ggml-org/gemma-3-1b-GGUF gemma-3-1b-Q4_K_M.gguf --local-dir E:\models\GEMMA
 
-# Coder — Qwen3 1.7B Q8_0
+# Coder — Qwen3 1.7B Q8_0  (KHANARY_CODER_MODEL)
 huggingface-cli download lmstudio-community/Qwen3-1.7B-GGUF Qwen3-1.7B-Q8_0.gguf --local-dir <target>
 ```
-
-Override paths without editing code: `$env:KHANARY_ADVISER_MODEL`, `$env:KHANARY_CODER_MODEL`.
 
 ---
 
