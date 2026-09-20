@@ -332,6 +332,100 @@ The 850 MB corpus can **answer questions today** via µN-ary RAG. The GraphDB la
 
 ---
 
+## TRACKS — semantic reasoning tracks
+
+Tracks are the phase-indexed semantic QA layer that grounds n-ary grams in the K'UHUL reasoning cycle. Two track formats are in active use.
+
+### `.track.xjson` — micronaut semantic tracks
+
+226 tracks in `micronaut-v4/programs/micronauts/semantic/`. Schema:
+
+```json
+{
+  "@kind": "micronaut.semantic-tracks.v1",
+  "micronaut": { "id": "PM-1", "authority": "XCFE", "audit": "JROM" },
+  "tracks": [{
+    "id": "alice.artificial-intelligence",
+    "topic": "artificial-intelligence",
+    "confidence": 0.78,
+    "folds": [{
+      "id":    "qa-N",
+      "topic": "question pattern",
+      "phase": "Pop",
+      "governs": ["token", "token", "..."],
+      "nodes": [
+        { "id": "q", "kind": "semantic_node", "semantic_role": "INPUT PATTERN" },
+        { "id": "a", "kind": "output",        "semantic_role": "response text"  }
+      ]
+    }]
+  }]
+}
+```
+
+Each fold is a single Q/A pair assigned to a K'UHUL phase. The `governs` field lists the n-gram tokens this fold anchors. The 6-phase cycle repeats across as many folds as the track contains — wrapping back to Pop, establishing recursive semantic coverage.
+
+Phase assignment semantics in a track fold:
+
+| Phase | Role in Q/A fold |
+|-------|-----------------|
+| Pop | Perceive — first-contact acquisition |
+| Wo | Allocate — establish context frame |
+| Yax | Condition — topic selector / discriminant |
+| Sek | Output — execute response |
+| Ch'en | Commit — evidence / observation record |
+| Xul | Collapse — close and hand back |
+
+Topic families in the corpus: AIML/AI, alice identity, adam expert, geography, history, humor, literature, philosophy, and ~220 more.
+
+### DGML — directed reasoning graphs
+
+DGML (Directed Graph Markup Language) is the second track format. It encodes reasoning/thinking paths as directed graphs with typed properties:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<DirectedGraph xmlns="https://schemas.microsoft.com/vs/2009/dgml">
+  <Nodes>
+    <Node Id="a" Label="a" Size="10" />
+    <Node Id="b" Background="#FF008080" Label="b" />
+    <Node Id="c" Label="c" Start="2010-06-10" />
+  </Nodes>
+  <Links>
+    <Link Source="a" Target="b" />
+    <Link Source="a" Target="c" />
+  </Links>
+  <Properties>
+    <Property Id="Background" Label="Background" DataType="Brush" />
+    <Property Id="Label"      Label="Label"      DataType="String" />
+    <Property Id="Size"       DataType="String" />
+    <Property Id="Start"      DataType="DateTime" />
+  </Properties>
+</DirectedGraph>
+```
+
+Where `.track.xjson` encodes a linear phase-indexed QA sequence, DGML encodes a **branching topology** — nodes are reasoning states, links are directed transitions, properties carry typed metadata (phase, timestamp, visual encoding, weight). DGML graphs can be arbitrarily deep and wide, giving the system unbounded reasoning track space.
+
+### Tracks in the Brain architecture
+
+Tracks sit at the intersection of **N** (n-ary grams), **E** (micronauts), and **G** (graph topology):
+
+| Layer | What tracks contribute |
+|-------|----------------------|
+| `N` — n-ary grams | `.track.xjson` `governs` lists supply phase-keyed gram anchors — each fold contributes its token set to the gram index at the assigned phase |
+| `E` — micronauts | Each `.track.xjson` is owned by a named micronaut (`PM-1`, etc.); micronauts are the reasoning agents that fire tracks |
+| `G` — graph topology | DGML graphs map directly into GraphDB — nodes become semantic identities, links become ARCs |
+| `R` — routing / ARCs | DGML links → ARC candidates; `.track.xjson` phase annotations → ARC `θ` coordinate |
+| `M` — memory | Track `confidence` and `audit: JROM` fields feed the IDB causal record |
+
+$$
+\boxed{\textbf{Tracks = phase-indexed semantic grounding for n-ary grams}}
+$$
+
+$$
+\boxed{\textbf{DGML = topological expansion of tracks into arbitrarily deep reasoning graphs}}
+$$
+
+---
+
 ## MX2DB / IDB memory schema
 
 ```
