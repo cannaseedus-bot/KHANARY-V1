@@ -1,0 +1,158 @@
+// KLSL Shader PEG v1
+// Covers shader-oriented .kuhul files in build/shaders/klsl:
+// - bracket KUHUL programs: [Pop] ... [Xul]
+// - parenthesized section documents: (⟁SYSTEM⟁) name { ... }
+// - metadata shader manifests: @shader_language, @shaders, @kernel
+
+Program
+  <- _ Item* EOF
+
+Item
+  <- BracketStatement
+   / Section
+   / Attribute
+   / Object
+   / Array
+   / Comment
+
+BracketStatement
+  <- Fold
+   / Allocation
+   / Read
+   / Write
+   / Operation
+   / PhaseCycle
+   / Invocation
+
+Fold
+  <- "[" _ "Pop" _ "]" _ BracketStatement* "[" _ "Xul" _ "]"
+
+Allocation
+  <- "[" _ "Wo" __ Identifier __ TensorType _ "]"
+
+Read
+  <- "[" _ "Yax" __ Identifier _ "]"
+
+Write
+  <- "[" _ "Ch'en" __ Identifier __ Value _ "]"
+
+Operation
+  <- "[" _ "Sek" __ Glyph (__ Value)+ _ "]"
+
+PhaseCycle
+  <- "[" _ "K'ayab'" _ "]" _ BracketStatement* "[" _ "Kumk'u" _ "]"
+
+Invocation
+  <- "[" _ "Muwan" __ Identifier (__ Value)* _ "]"
+
+Section
+  <- SectionTag __ Identifier _ Object
+
+SectionTag
+  <- "(" _ GlyphRun _ ")"
+
+Attribute
+  <- "@" Identifier _ ":" _ Value _ Comma?
+
+Object
+  <- "{" _ PairList? _ "}"
+
+PairList
+  <- Pair (_ Comma _ Pair)* _ Comma?
+
+Pair
+  <- Key _ ":" _ Value
+
+Array
+  <- "[" _ (Value (_ Comma _ Value)* _ Comma?)? _ "]"
+
+Value
+  <- TensorType
+   / String
+   / Number
+   / Boolean
+   / Null
+   / Object
+   / Array
+   / Section
+   / Identifier
+   / GlyphRun
+
+TensorType
+  <- "tensor" _ "<" _ ElementType _ "," _ Shape _ ">"
+
+Shape
+  <- "[" _ Dim (_ Comma _ Dim)* _ "]"
+
+Dim
+  <- Integer / "?" / String
+
+ElementType
+  <- "float32" / "float64" / "f32" / "f64" / "int32" / "int64" / "i32" / "i64" / "uint32" / "u32" / "uint8" / "bool" / "complex64"
+
+Key
+  <- String / Identifier / AtIdentifier
+
+AtIdentifier
+  <- "@" Identifier
+
+Identifier
+  <- [A-Za-z_][A-Za-z0-9_.'-]*
+
+Glyph
+  <- "⊗" / "⊕" / "⊖" / "⊛" / "⊜" / "⊝" / "⊞" / "⤍" / "↻" / "⟲" / "∿" / "⊙" / "≋"
+
+GlyphRun
+  <- (!(")" / "{" / "}" / "[" / "]" / ":" / "," / S) .)+
+
+String
+  <- "\"" StringChar* "\""
+   / "'" SingleStringChar* "'"
+
+StringChar
+  <- "\\\"" / "\\\\" / "\\n" / "\\r" / "\\t" / !("\"") .
+
+SingleStringChar
+  <- "\\'" / "\\\\" / "\\n" / "\\r" / "\\t" / !("'") .
+
+Number
+  <- "-"? Integer ("." [0-9]+)? Exponent?
+
+Integer
+  <- "0" / [1-9][0-9]*
+
+Exponent
+  <- [eE] [+-]? [0-9]+
+
+Boolean
+  <- "true" / "false"
+
+Null
+  <- "null"
+
+Comment
+  <- LineComment / BlockComment / ParenBlockComment
+
+LineComment
+  <- "//" (!EOL .)* EOL?
+
+BlockComment
+  <- "/*" (!"*/" .)* "*/"
+
+ParenBlockComment
+  <- "(*" (!"*)" .)* "*)"
+
+Comma
+  <- ","
+
+_  <- (S / Comment)*
+__ <- (S / Comment)+
+
+S
+  <- [ \t\r\n]+
+
+EOL
+  <- "\r\n" / "\n" / "\r"
+
+EOF
+  <- !.
