@@ -11,7 +11,7 @@ KHANARY encodes tensor operations and control flow into 32-bit **Knowledge Numer
 | Directory | Contents |
 |-----------|----------|
 | `models/` | Birdsong geometry model (STB format, KNU encoding, HLSL/WGSL kernels) |
-| `docs/` | STB format spec, birdsong geometry grammar, tensor fields, brain schema |
+| `docs/` | STB format spec, birdsong geometry grammar, tensor fields, brain schema; GPU compute stack ([GPU.md](docs/GPU.md), [GLSL.md](docs/GLSL.md), [PHASE-TRANSFORMER.md](docs/PHASE-TRANSFORMER.md)) |
 | `tools/` | STB read/write, brain→STB, GGUF→STB, safetensors→STB converters; `gen.py` / `gen.mjs` two-model adviser→coder pipeline |
 | `grammar/` | `KHANARY.EBNF` — unified K'UHUL grammar v7.0.0 (1496 lines, 23 sections); sub-grammars: kast, kfold, khl-rom, kxml, xcfe, xjson, xshard, pi-enforcement, KLSL shader PEG; ebnf-parser + grammar-validator tooling |
 | `klsl/` | KLSL kernel sources — the K'UHUL shader IR (`.kuhul` → HLSL / WGSL / GLSL) |
@@ -42,6 +42,17 @@ KLSL IR
     ├── emit_wgsl  → WebGPU/WGSL   (browser/cross-platform)
     └── emit_glsl  → OpenGL 4.3    (universal — every GPU since 2012)
 ```
+
+### GPU compute stack
+Three confirmed GPU paths for iGPU inference (Intel HD 4600 and equivalents):
+
+| Path | Mechanism | Used by |
+|------|-----------|---------|
+| `llama-server` HTTP | WebGPU/Dawn (`ggml-webgpu.dll`) | `gen.py` default, `gen.mjs --http` |
+| Python local | `torch-directml` (DirectML via D3D12) | `gen.py --local` |
+| Node local | `node-llama-cpp` + WebGL2 | `gen.mjs` default |
+
+Full stack documentation: [`docs/GPU.md`](docs/GPU.md) — covers D3D11 cs_5_0, DirectML/KLSL forward pass, OpenCL, XVM 32-fiber cluster, fold tensor system, skeleton/bone routing, and hybrid trainer architecture. [`docs/GLSL.md`](docs/GLSL.md) — OpenGL 4.3 universal compute path. [`docs/PHASE-TRANSFORMER.md`](docs/PHASE-TRANSFORMER.md) — phase-addressed field architecture.
 
 ### KXML
 Declarative inference graph format with tool-aware Jinja chat templates. One KXML front-end drives any GGUF model through the stock-model adapter. KXML is the topology layer — it describes the compute graph; `.kuhul` / `.khl` own the application logic; C++ / C# / PS1 nodes in KXML are strictly system I/O boundary hooks (`@effect: io`, `@effect: process`). See `kxml/README.md`.
